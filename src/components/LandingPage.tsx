@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { motion } from "framer-motion";
 import {
     Link2,
@@ -11,18 +10,18 @@ import {
     Globe,
     Database,
     Layout,
-    Menu,
-    X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import Navbar from "./Navbar";
 
-const FeatureCard = ({ icon: Icon, title, description, delay }: any) => (
+interface FeatureCardProps {
+    icon: React.ElementType;
+    title: string;
+    description: string;
+    delay: number;
+}
+
+const FeatureCard = ({ icon: Icon, title, description, delay }: FeatureCardProps) => (
     <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -40,8 +39,7 @@ const FeatureCard = ({ icon: Icon, title, description, delay }: any) => (
     </motion.div>
 );
 
-export default function LandingPage({ onGetStarted }: { onGetStarted: () => void }) {
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
+export default function LandingPage({ onGetStarted, onSignIn }: { onGetStarted: () => void; onSignIn: () => void }) {
 
     return (
         <div className="min-h-screen bg-[#020617] text-slate-200 selection:bg-blue-500/30 font-sans selection:text-blue-200 overflow-x-hidden">
@@ -52,44 +50,10 @@ export default function LandingPage({ onGetStarted }: { onGetStarted: () => void
             </div>
 
             {/* Navigation */}
-            <nav className="relative z-50 flex items-center justify-between px-6 md:px-8 py-6 max-w-7xl mx-auto">
-                <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
-                        <Layout className="text-white w-5 h-5 md:w-6 md:h-6" />
-                    </div>
-                    <span className="text-xl md:text-2xl font-black tracking-tighter text-white">Orbdyn</span>
-                </div>
-
-                {/* Desktop Nav */}
-                <div className="hidden md:flex items-center gap-6">
-                    <Button variant="ghost" className="text-slate-400 hover:text-white hover:bg-white/5 font-medium">
-                        Sign In
-                    </Button>
-                    <Button
-                        onClick={onGetStarted}
-                        className="bg-white text-black hover:bg-slate-200 px-6 rounded-full font-bold h-11 shadow-xl shadow-white/5"
-                    >
-                        Join the waitlist
-                    </Button>
-                </div>
-
-                {/* Mobile Nav */}
-                <div className="md:hidden">
-                    <DropdownMenu onOpenChange={setIsMenuOpen}>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="text-white hover:bg-white/5">
-                                {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56 bg-slate-900 border-slate-800 text-slate-200 shadow-2xl">
-                            <DropdownMenuItem className="focus:bg-white/5 focus:text-white py-3">Sign In</DropdownMenuItem>
-                            <DropdownMenuItem onClick={onGetStarted} className="bg-white text-black focus:bg-slate-200 focus:text-black font-bold py-3 mt-1">
-                                Join the waitlist
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
-            </nav>
+            <Navbar
+                onLogoClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                onSignInClick={onSignIn}
+            />
 
             {/* Hero Section */}
             <section className="relative z-10 pt-16 md:pt-20 pb-24 md:pb-32 px-6">
@@ -105,13 +69,13 @@ export default function LandingPage({ onGetStarted }: { onGetStarted: () => void
                     </motion.div>
 
                     <motion.h1
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: 0.2 }}
-                        className="text-4xl sm:text-6xl md:text-8xl font-black tracking-tight text-white mb-6 md:mb-8 leading-[1.1] md:leading-[0.95]"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.5, delay: 0.2 }}
+                        className="text-4xl sm:text-6xl md:text-7xl font-bold tracking-tight text-white mb-6 md:mb-8 leading-tight"
                     >
                         Your Personal <br className="hidden sm:block" />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-blue-500 animate-gradient">
+                        <span className="text-blue-500">
                             Resource Manager
                         </span>
                     </motion.h1>
@@ -134,7 +98,7 @@ export default function LandingPage({ onGetStarted }: { onGetStarted: () => void
                     >
                         <Button
                             onClick={onGetStarted}
-                            className="bg-gradient-to-r from-orange-400 to-amber-500 hover:from-orange-500 hover:to-amber-600 text-black px-8 md:px-10 h-14 md:h-16 rounded-2xl text-base md:text-lg font-black shadow-2xl shadow-orange-500/20 w-full sm:w-auto flex items-center justify-center gap-2 group"
+                            className="bg-[#f59e0b] hover:bg-[#d97706] text-black px-8 md:px-10 h-14 rounded-xl text-base font-bold shadow-lg shadow-amber-500/20 w-full sm:w-auto flex items-center justify-center gap-2 group border-none"
                         >
                             Get Started Free <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                         </Button>
@@ -198,7 +162,7 @@ export default function LandingPage({ onGetStarted }: { onGetStarted: () => void
                     <div className="absolute inset-0 bg-grid-white/[0.02] pointer-events-none" />
                     <div className="relative z-10 grid md:grid-cols-2 items-center gap-10 md:gap-12">
                         <div>
-                            <h2 className="text-3xl md:text-5xl font-black text-white mb-6 leading-tight">
+                            <h2 className="text-3xl md:text-5xl font-bold text-white mb-6 leading-tight">
                                 Designed for the <br className="hidden md:block" />
                                 <span className="text-blue-400">modern workflow.</span>
                             </h2>

@@ -1,27 +1,38 @@
 import { useState } from 'react'
 import LandingPage from './components/LandingPage'
+import AuthPage from './components/AuthPage'
+import Dashboard from './components/Dashboard'
 
 function App() {
   const [currentPage, setCurrentPage] = useState<'landing' | 'auth' | 'dashboard'>('landing');
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
+
+  const handleNavigateToAuth = (mode: 'signin' | 'signup') => {
+    setAuthMode(mode);
+    setCurrentPage('auth');
+  };
 
   return (
     <div className="min-h-screen font-sans antialiased text-slate-200">
       {currentPage === 'landing' && (
-        <LandingPage onGetStarted={() => setCurrentPage('auth')} />
+        <LandingPage
+          onGetStarted={() => handleNavigateToAuth('signup')}
+          onSignIn={() => handleNavigateToAuth('signin')}
+        />
       )}
 
       {currentPage === 'auth' && (
-        <div className="flex items-center justify-center min-h-screen bg-[#020617]">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold mb-4 text-white">Sign In coming soon</h2>
-            <button
-              onClick={() => setCurrentPage('landing')}
-              className="text-blue-500 hover:underline font-medium"
-            >
-              Go back to landing
-            </button>
-          </div>
-        </div>
+        <AuthPage
+          initialMode={authMode}
+          onBack={() => setCurrentPage('landing')}
+          onSuccess={() => setCurrentPage('dashboard')}
+        />
+      )}
+
+      {currentPage === 'dashboard' && (
+        <Dashboard
+          onSignOut={() => setCurrentPage('landing')}
+        />
       )}
     </div>
   )
