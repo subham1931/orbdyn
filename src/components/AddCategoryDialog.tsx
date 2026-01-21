@@ -50,43 +50,59 @@ export default function CategoryDialog({ isOpen, onClose, onSave, categoryToEdit
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="bg-[#0b1120] border-slate-800 text-slate-200 sm:max-w-[400px] p-0 overflow-hidden gap-0">
-                <DialogHeader className="p-5 border-b border-slate-800/50">
-                    <DialogTitle className="text-lg font-bold">
-                        {categoryToEdit ? "Edit Category" : "New Category"}
-                    </DialogTitle>
-                </DialogHeader>
+            <DialogContent className="bg-[#0f172a] border border-slate-800/60 text-slate-200 sm:max-w-[425px] p-0 overflow-hidden gap-0 rounded-2xl shadow-2xl shadow-black/50">
+                {/* Header with subtle gradient border */}
+                <div className="bg-[#0f172a] p-6 pb-4 border-b border-slate-800/50 relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-amber-500/50 to-transparent opacity-50" />
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                            {categoryToEdit ? "Edit Category" : "New Category"}
+                        </DialogTitle>
+                    </DialogHeader>
+                </div>
 
-                <div className="p-5 space-y-6">
-                    <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                            Name
+                <div className="p-6 space-y-8 bg-[#0f172a]">
+                    <div className="space-y-3 group">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">
+                            Category Name
                         </label>
-                        <Input
-                            placeholder="e.g., Work, Personal, Ideas"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            className="bg-[#1e293b]/50 border-slate-700 focus:border-blue-500 text-slate-200 h-11 rounded-xl"
-                        />
+                        <div className="relative">
+                            <Input
+                                placeholder="e.g., Work, Personal, Ideas"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                className="bg-[#1e293b]/30 border-slate-800 h-12 pl-4 rounded-xl focus:ring-2 focus:ring-[#f59e0b]/50 focus:border-[#f59e0b]/50 transition-all font-medium text-slate-200 placeholder:text-slate-600"
+                            />
+                            {/* Ambient glow on input focus */}
+                            <div className="absolute inset-0 rounded-xl bg-[#f59e0b]/20 blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-500 pointer-events-none -z-10" />
+                        </div>
                     </div>
 
                     <div className="space-y-3">
-                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                            Color
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">
+                            Theme Color
                         </label>
-                        <div className="flex flex-wrap gap-3">
+                        <div className="grid grid-cols-5 gap-3">
                             {COLORS.map((color) => (
                                 <button
                                     key={color.name}
                                     onClick={() => setSelectedColor(color.value)}
-                                    className={`w-10 h-10 rounded-xl transition-all flex items-center justify-center relative ${selectedColor === color.value
-                                        ? "ring-2 ring-offset-2 ring-offset-[#0b1120] ring-white scale-110"
-                                        : "hover:scale-105"
-                                        }`}
-                                    style={{ backgroundColor: color.value }}
+                                    className={`
+                                        group relative w-full aspect-square rounded-xl transition-all duration-300 flex items-center justify-center
+                                        ${selectedColor === color.value
+                                            ? "ring-2 ring-white shadow-lg shadow-black/50 scale-100"
+                                            : "hover:scale-105 hover:ring-1 hover:ring-slate-700 opacity-80 hover:opacity-100"
+                                        }
+                                    `}
+                                    style={{
+                                        backgroundColor: color.value,
+                                        boxShadow: selectedColor === color.value ? `0 0 20px ${color.value}40` : 'none'
+                                    }}
                                 >
                                     {selectedColor === color.value && (
-                                        <Check className="w-5 h-5 text-white drop-shadow-md" />
+                                        <div className="bg-white/20 backdrop-blur-sm rounded-full p-1 animate-in zoom-in duration-200">
+                                            <Check className="w-4 h-4 text-white font-bold stroke-[3]" />
+                                        </div>
                                     )}
                                 </button>
                             ))}
@@ -94,18 +110,24 @@ export default function CategoryDialog({ isOpen, onClose, onSave, categoryToEdit
                     </div>
                 </div>
 
-                <div className="p-5 pt-2 flex justify-between gap-3">
+                <div className="p-6 pt-2 pb-6 bg-[#0f172a] border-t border-slate-800/50 flex items-center justify-end gap-3 z-10">
                     <Button
                         variant="ghost"
                         onClick={onClose}
-                        className="flex-1 h-11 rounded-xl text-slate-400 hover:text-white hover:bg-white/5"
+                        className="h-11 px-6 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all text-sm font-medium"
                     >
                         Cancel
                     </Button>
                     <Button
                         onClick={handleSubmit}
                         disabled={!name.trim()}
-                        className="flex-[2] h-11 bg-[#f59e0b] hover:bg-[#d97706] text-black font-bold rounded-xl shadow-lg shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className={`
+                            h-11 px-8 rounded-xl font-bold text-sm shadow-lg transition-all duration-300 text-black
+                            ${!name.trim()
+                                ? "bg-slate-800 text-slate-500 cursor-not-allowed"
+                                : "bg-[#f59e0b] hover:bg-[#d97706] hover:shadow-amber-500/25"
+                            }
+                        `}
                     >
                         {categoryToEdit ? "Save Changes" : "Create Category"}
                     </Button>
