@@ -10,6 +10,12 @@ export interface Resource {
     isFavorite?: boolean;
     isArchived?: boolean;
     url?: string;
+    description?: string;
+    images?: string[];
+    documents?: string[];
+    dueDate?: string;
+    dueTime?: string;
+    priority?: 'Low' | 'Medium' | 'High';
 }
 
 export interface Category {

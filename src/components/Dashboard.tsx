@@ -33,6 +33,10 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
+    DropdownMenuSub,
+    DropdownMenuSubContent,
+    DropdownMenuSubTrigger,
+    DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
 
 import SettingsPage from "./SettingsPage";
@@ -148,8 +152,14 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
         title: string;
         type: ResourceType;
         content: string;
+        description?: string;
         tags: string[];
         url?: string;
+        images?: string[];
+        documents?: string[];
+        dueDate?: string;
+        dueTime?: string;
+        priority?: 'Low' | 'Medium' | 'High';
     }) => {
         if (editingResource) {
             // Update existing resource
@@ -159,6 +169,12 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                         ...r,
                         ...resourceData,
                         content: resourceData.content || (resourceData.url ? resourceData.url : ""),
+                        description: resourceData.description,
+                        images: resourceData.images,
+                        documents: resourceData.documents,
+                        dueDate: resourceData.dueDate,
+                        dueTime: resourceData.dueTime,
+                        priority: resourceData.priority
                     }
                     : r
             ));
@@ -170,11 +186,17 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                 title: resourceData.title,
                 type: resourceData.type,
                 content: resourceData.content || (resourceData.url ? resourceData.url : ""),
+                description: resourceData.description,
                 createdAt: Date.now(),
                 tags: resourceData.tags,
                 isFavorite: false,
                 isArchived: false,
-                url: resourceData.url
+                url: resourceData.url,
+                images: resourceData.images,
+                documents: resourceData.documents,
+                dueDate: resourceData.dueDate,
+                dueTime: resourceData.dueTime,
+                priority: resourceData.priority
             };
             setResources([newResource, ...resources]);
         }
@@ -197,11 +219,30 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
         ));
     };
 
-    const handleExportResource = (resource: Resource) => {
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(resource, null, 2));
+    const handleExportResource = (resource: Resource, format: 'json' | 'md' | 'pdf' = 'json') => {
+        let content = "";
+        let contentType = "";
+        let extension = "";
+
+        if (format === 'json') {
+            content = JSON.stringify(resource, null, 2);
+            contentType = "application/json";
+            extension = "json";
+        } else if (format === 'md') {
+            content = `# ${resource.title}\n\nType: ${resource.type}\n\n${resource.description || ''}\n\n${resource.content}\n\n${resource.url ? `URL: ${resource.url}` : ''}`;
+            contentType = "text/markdown";
+            extension = "md";
+        } else if (format === 'pdf') {
+            // Simple text representation for PDF simulation if no library is present
+            content = `RESOURCE: ${resource.title}\nTYPE: ${resource.type}\n\n${resource.description || ''}\n\n${resource.content}`;
+            contentType = "application/pdf";
+            extension = "pdf";
+        }
+
+        const dataStr = `data:${contentType};charset=utf-8,` + encodeURIComponent(content);
         const downloadAnchorNode = document.createElement('a');
         downloadAnchorNode.setAttribute("href", dataStr);
-        downloadAnchorNode.setAttribute("download", `${resource.title.replace(/\s+/g, '_')}.json`);
+        downloadAnchorNode.setAttribute("download", `${resource.title.replace(/\s+/g, '_')}.${extension}`);
         document.body.appendChild(downloadAnchorNode);
         downloadAnchorNode.click();
         downloadAnchorNode.remove();
@@ -465,9 +506,24 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                                                                 <Pencil className="w-3.5 h-3.5 text-slate-400 group-focus:text-white transition-colors" /> Edit Resource
                                                             </DropdownMenuItem>
                                                             <div className="h-px bg-slate-800 my-1.5 mx-1" />
-                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleExportResource(resource); }} className="group hover:bg-slate-800 focus:bg-slate-800 focus:text-white cursor-pointer gap-2.5 text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-300">
-                                                                <Download className="w-3.5 h-3.5 text-slate-400 group-focus:text-white transition-colors" /> Export
-                                                            </DropdownMenuItem>
+                                                            <DropdownMenuSub>
+                                                                <DropdownMenuSubTrigger className="hover:bg-blue-600 focus:bg-blue-600 data-[state=open]:bg-blue-600 hover:text-white focus:text-white data-[state=open]:text-white cursor-pointer gap-2.5 text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-300">
+                                                                    <Download className="w-3.5 h-3.5 transition-colors" /> Export
+                                                                </DropdownMenuSubTrigger>
+                                                                <DropdownMenuPortal>
+                                                                    <DropdownMenuSubContent className="bg-[#0f172a] border-slate-800 text-slate-200 shadow-xl p-1.5 min-w-[140px]">
+                                                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleExportResource(resource, 'json'); }} className="hover:bg-slate-800 focus:bg-slate-800 cursor-pointer text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-300 hover:text-slate-300 focus:text-slate-300">
+                                                                            As JSON
+                                                                        </DropdownMenuItem>
+                                                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleExportResource(resource, 'md'); }} className="hover:bg-slate-800 focus:bg-slate-800 cursor-pointer text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-300 hover:text-slate-300 focus:text-slate-300">
+                                                                            As Markdown
+                                                                        </DropdownMenuItem>
+                                                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleExportResource(resource, 'pdf'); }} className="bg-blue-600 hover:bg-blue-600 focus:bg-blue-600 text-white cursor-pointer text-xs font-bold px-2.5 py-2 rounded-md transition-colors">
+                                                                            As PDF
+                                                                        </DropdownMenuItem>
+                                                                    </DropdownMenuSubContent>
+                                                                </DropdownMenuPortal>
+                                                            </DropdownMenuSub>
                                                             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleShareResource(resource); }} className="group hover:bg-slate-800 focus:bg-slate-800 focus:text-white cursor-pointer gap-2.5 text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-300">
                                                                 <Share2 className="w-3.5 h-3.5 text-slate-400 group-focus:text-white transition-colors" /> Share
                                                             </DropdownMenuItem>

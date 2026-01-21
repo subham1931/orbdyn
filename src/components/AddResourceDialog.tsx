@@ -3,7 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Link as LinkIcon, FileText, CheckSquare, Mic } from "lucide-react";
+import { Link as LinkIcon, FileText, CheckSquare, Mic, Image as ImageIcon, Paperclip, ChevronDown, Flag, Folder } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { Resource, ResourceType, Category } from "@/types";
 
 interface AddResourceDialogProps {
@@ -13,8 +14,14 @@ interface AddResourceDialogProps {
         title: string;
         type: ResourceType;
         content: string;
+        description?: string;
         tags: string[];
         url?: string;
+        images?: string[];
+        documents?: string[];
+        dueDate?: string;
+        dueTime?: string;
+        priority?: 'Low' | 'Medium' | 'High';
     }) => void;
     categories: Category[];
     resourceToEdit?: Resource | null;
@@ -25,8 +32,19 @@ export default function AddResourceDialog({ isOpen, onClose, onAdd, categories, 
     const [title, setTitle] = useState("");
     const [url, setUrl] = useState("");
     const [description, setDescription] = useState("");
+
+    // Note specific fields
+    const [noteContent, setNoteContent] = useState("");
+    const [images, setImages] = useState<string[]>([]);
+    const [documents, setDocuments] = useState<string[]>([]);
+
     const [category, setCategory] = useState("");
     const [tags, setTags] = useState("");
+
+    // To-Do specific fields
+    const [dueDate, setDueDate] = useState("");
+    const [dueTime, setDueTime] = useState("");
+    const [priority, setPriority] = useState<'Low' | 'Medium' | 'High'>('Medium');
 
     // State for tracking prop changes to update form
     const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
@@ -40,7 +58,13 @@ export default function AddResourceDialog({ isOpen, onClose, onAdd, categories, 
             if (resourceToEdit) {
                 setTitle(resourceToEdit.title);
                 setUrl(resourceToEdit.url || "");
-                setDescription(resourceToEdit.content);
+                setDescription(resourceToEdit.description || resourceToEdit.content); // Fallback logic
+                setNoteContent(resourceToEdit.type === 'Note' ? resourceToEdit.content : "");
+                setImages(resourceToEdit.images || []);
+                setDocuments(resourceToEdit.documents || []);
+                setDueDate(resourceToEdit.dueDate || "");
+                setDueTime(resourceToEdit.dueTime || "");
+                setPriority(resourceToEdit.priority || 'Medium');
                 setActiveTab(resourceToEdit.type);
 
                 const resourceTags = resourceToEdit.tags || [];
@@ -53,6 +77,12 @@ export default function AddResourceDialog({ isOpen, onClose, onAdd, categories, 
                 setTitle("");
                 setUrl("");
                 setDescription("");
+                setNoteContent("");
+                setImages([]);
+                setDocuments([]);
+                setDueDate("");
+                setDueTime("");
+                setPriority('Medium');
                 setCategory("");
                 setTags("");
                 setActiveTab("Link");
@@ -68,16 +98,22 @@ export default function AddResourceDialog({ isOpen, onClose, onAdd, categories, 
         onAdd({
             title,
             type: activeTab,
-            content: description,
+            content: activeTab === 'Note' ? noteContent : description,
+            description: description,
             tags: category ? [category, ...tags.split(",").map(t => t.trim()).filter(Boolean)] : tags.split(",").map(t => t.trim()).filter(Boolean),
-            url: activeTab === "Link" ? url : undefined
+            url: activeTab === "Link" ? url : undefined,
+            images: images,
+            documents: documents,
+            dueDate: activeTab === 'To Do' ? dueDate : undefined,
+            dueTime: activeTab === 'To Do' ? dueTime : undefined,
+            priority: activeTab === 'To Do' ? priority : undefined,
         });
         onClose();
     };
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="bg-[#0b1120] border-slate-800 text-slate-200 sm:max-w-[600px] p-0 overflow-hidden gap-0">
+            <DialogContent className="bg-[#0b1120] border-slate-800 text-slate-200 sm:max-w-[600px] max-h-[85vh] flex flex-col p-0 overflow-hidden gap-0">
                 <DialogHeader className="p-6 pb-4 border-b border-slate-800/50">
                     <DialogTitle className="text-xl font-bold flex items-center justify-between">
                         {resourceToEdit ? "Edit Resource" : "Add Resource"}
@@ -85,7 +121,7 @@ export default function AddResourceDialog({ isOpen, onClose, onAdd, categories, 
                     </DialogTitle>
                 </DialogHeader>
 
-                <div className="p-6 space-y-6">
+                <div className="p-6 space-y-6 overflow-y-auto flex-1">
                     <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ResourceType)} className="w-full">
                         <TabsList className="grid w-full grid-cols-3 bg-[#1e293b]/50 p-1 h-12 rounded-xl">
                             <TabsTrigger value="Link" className="gap-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white h-10 rounded-lg transition-all">
@@ -132,36 +168,202 @@ export default function AddResourceDialog({ isOpen, onClose, onAdd, categories, 
                                 </div>
                             </div>
 
+
+
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                                     Description
                                 </label>
                                 <div className="relative">
                                     <textarea
-                                        placeholder="Add a description..."
+                                        placeholder="Add a short description/summary..."
                                         value={description}
                                         onChange={(e) => setDescription(e.target.value)}
-                                        className="w-full bg-[#1e293b]/50 border border-slate-700 focus:border-blue-500 focus:outline-none text-slate-200 min-h-[100px] rounded-xl p-3 text-sm resize-none"
+                                        className="w-full bg-[#1e293b]/50 border border-slate-700 focus:border-blue-500 focus:outline-none text-slate-200 min-h-[80px] rounded-xl p-3 text-sm resize-none"
                                     />
-                                    <Mic className="absolute right-3 bottom-3 w-4 h-4 text-slate-500 hover:text-white cursor-pointer transition-colors" />
                                 </div>
                             </div>
+
+                            {(activeTab === "Note" || activeTab === "To Do") && (
+                                <>
+                                    {activeTab === "Note" && (
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                                Content
+                                            </label>
+                                            <div className="relative">
+                                                <textarea
+                                                    placeholder="Write your note here..."
+                                                    value={noteContent}
+                                                    onChange={(e) => setNoteContent(e.target.value)}
+                                                    className="w-full bg-[#1e293b]/50 border border-slate-700 focus:border-blue-500 focus:outline-none text-slate-200 min-h-[150px] rounded-xl p-3 text-sm resize-none font-mono"
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {activeTab === "To Do" && (
+                                        <div className="grid grid-cols-3 gap-4">
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                                    Due Date
+                                                </label>
+                                                <Input
+                                                    type="date"
+                                                    value={dueDate}
+                                                    onChange={(e) => setDueDate(e.target.value)}
+                                                    className="bg-[#1e293b]/50 border-slate-700 focus:border-blue-500 text-slate-200 h-11 rounded-xl [color-scheme:dark]"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                                    Due Time
+                                                </label>
+                                                <Input
+                                                    type="time"
+                                                    value={dueTime}
+                                                    onChange={(e) => setDueTime(e.target.value)}
+                                                    className="bg-[#1e293b]/50 border-slate-700 focus:border-blue-500 text-slate-200 h-11 rounded-xl [color-scheme:dark]"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                                    Priority
+                                                </label>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button
+                                                            variant="outline"
+                                                            className={`w-full justify-between h-11 rounded-xl bg-[#1e293b]/50 border-slate-700 font-bold ${priority === 'High' ? 'text-rose-500 border-rose-500/30 hover:text-rose-500 hover:bg-[#1e293b]/50' :
+                                                                priority === 'Medium' ? 'text-amber-500 border-amber-500/30 hover:text-amber-500 hover:bg-[#1e293b]/50' :
+                                                                    'text-emerald-500 border-emerald-500/30 hover:text-emerald-500 hover:bg-[#1e293b]/50'
+                                                                }`}
+                                                        >
+                                                            <span className="flex items-center gap-2">
+                                                                <Flag className="w-4 h-4" />
+                                                                {priority}
+                                                            </span>
+                                                            <ChevronDown className="w-4 h-4 opacity-50" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent className="bg-[#0f172a] border-slate-800 w-[180px] p-1.5" align="end">
+                                                        <DropdownMenuItem
+                                                            onClick={() => setPriority('Low')}
+                                                            className="text-emerald-500 focus:text-emerald-400 focus:bg-emerald-500/10 gap-3 rounded-lg py-2 font-semibold cursor-pointer"
+                                                        >
+                                                            <div className="w-2 h-2 rounded-full bg-emerald-500" /> Low
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem
+                                                            onClick={() => setPriority('Medium')}
+                                                            className="text-amber-500 focus:text-amber-400 focus:bg-amber-500/10 gap-3 rounded-lg py-2 font-semibold cursor-pointer"
+                                                        >
+                                                            <div className="w-2 h-2 rounded-full bg-amber-500" /> Medium
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem
+                                                            onClick={() => setPriority('High')}
+                                                            className="text-rose-500 focus:text-rose-400 focus:bg-rose-500/10 gap-3 rounded-lg py-2 font-semibold cursor-pointer"
+                                                        >
+                                                            <div className="w-2 h-2 rounded-full bg-rose-500" /> High
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                                Images
+                                            </label>
+                                            <div className="relative group">
+                                                <Input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={(e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) setImages([...images, file.name]);
+                                                    }}
+                                                    className="pl-10 bg-[#1e293b]/50 border-slate-700 focus:border-blue-500 text-slate-200 h-11 rounded-xl file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-500/10 file:text-blue-400 hover:file:bg-blue-500/20"
+                                                />
+                                                <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-hover:text-blue-400 transition-colors" />
+                                            </div>
+                                            {images.length > 0 && (
+                                                <div className="flex flex-wrap gap-2 mt-2">
+                                                    {images.map((img, i) => (
+                                                        <span key={i} className="text-[10px] bg-slate-800 text-slate-300 px-2 py-1 rounded-full flex items-center gap-1">
+                                                            <ImageIcon className="w-3 h-3" /> {img}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                                Documents
+                                            </label>
+                                            <div className="relative group">
+                                                <Input
+                                                    type="file"
+                                                    onChange={(e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) setDocuments([...documents, file.name]);
+                                                    }}
+                                                    className="pl-10 bg-[#1e293b]/50 border-slate-700 focus:border-blue-500 text-slate-200 h-11 rounded-xl file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-500/10 file:text-blue-400 hover:file:bg-blue-500/20"
+                                                />
+                                                <Paperclip className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-hover:text-blue-400 transition-colors" />
+                                            </div>
+                                            {documents.length > 0 && (
+                                                <div className="flex flex-wrap gap-2 mt-2">
+                                                    {documents.map((doc, i) => (
+                                                        <span key={i} className="text-[10px] bg-slate-800 text-slate-300 px-2 py-1 rounded-full flex items-center gap-1">
+                                                            <FileText className="w-3 h-3" /> {doc}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </>
+                            )}
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                                         Category
                                     </label>
-                                    <select
-                                        value={category}
-                                        onChange={(e) => setCategory(e.target.value)}
-                                        className="w-full bg-[#1e293b]/50 border border-slate-700 focus:border-blue-500 focus:outline-none text-slate-200 h-11 rounded-xl px-3 text-sm appearance-none"
-                                    >
-                                        <option value="">Select a category</option>
-                                        {categories.map((cat) => (
-                                            <option key={cat.id} value={cat.name}>{cat.name}</option>
-                                        ))}
-                                    </select>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button
+                                                variant="outline"
+                                                className="w-full justify-between h-11 rounded-xl bg-[#1e293b]/50 border-slate-700 text-slate-300 font-medium hover:bg-[#1e293b]/50 hover:text-slate-300"
+                                            >
+                                                <span className="flex items-center gap-2">
+                                                    <Folder className="w-4 h-4 text-slate-500" />
+                                                    {category || "Select a category"}
+                                                </span>
+                                                <ChevronDown className="w-4 h-4 opacity-50" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent className="bg-[#0f172a] border-slate-800 w-[240px] p-1.5" align="start">
+                                            <DropdownMenuItem
+                                                onClick={() => setCategory("")}
+                                                className="text-slate-400 focus:text-white focus:bg-slate-800 gap-3 rounded-lg py-2 cursor-pointer"
+                                            >
+                                                <Folder className="w-4 h-4" /> None
+                                            </DropdownMenuItem>
+                                            {categories.map((cat) => (
+                                                <DropdownMenuItem
+                                                    key={cat.id}
+                                                    onClick={() => setCategory(cat.name)}
+                                                    className="text-slate-300 focus:text-white focus:bg-slate-800 gap-3 rounded-lg py-2 cursor-pointer"
+                                                >
+                                                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: cat.color }} />
+                                                    {cat.name}
+                                                </DropdownMenuItem>
+                                            ))}
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">
