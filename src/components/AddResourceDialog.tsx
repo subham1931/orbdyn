@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link as LinkIcon, FileText, CheckSquare, Mic } from "lucide-react";
-import type { ResourceType, Category } from "@/types";
+import type { Resource, ResourceType, Category } from "@/types";
 
 interface AddResourceDialogProps {
     isOpen: boolean;
@@ -17,9 +17,10 @@ interface AddResourceDialogProps {
         url?: string;
     }) => void;
     categories: Category[];
+    resourceToEdit?: Resource | null;
 }
 
-export default function AddResourceDialog({ isOpen, onClose, onAdd, categories }: AddResourceDialogProps) {
+export default function AddResourceDialog({ isOpen, onClose, onAdd, categories, resourceToEdit }: AddResourceDialogProps) {
     const [activeTab, setActiveTab] = useState<ResourceType>("Link");
     const [title, setTitle] = useState("");
     const [url, setUrl] = useState("");
@@ -27,16 +28,37 @@ export default function AddResourceDialog({ isOpen, onClose, onAdd, categories }
     const [category, setCategory] = useState("");
     const [tags, setTags] = useState("");
 
-    // Reset form when dialog opens/closes or tab changes?
-    useEffect(() => {
+    // State for tracking prop changes to update form
+    const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+    const [prevResourceToEdit, setPrevResourceToEdit] = useState(resourceToEdit);
+
+    if (isOpen !== prevIsOpen || resourceToEdit !== prevResourceToEdit) {
+        setPrevIsOpen(isOpen);
+        setPrevResourceToEdit(resourceToEdit);
+
         if (isOpen) {
-            setTitle("");
-            setUrl("");
-            setDescription("");
-            setCategory("");
-            setTags("");
+            if (resourceToEdit) {
+                setTitle(resourceToEdit.title);
+                setUrl(resourceToEdit.url || "");
+                setDescription(resourceToEdit.content);
+                setActiveTab(resourceToEdit.type);
+
+                const resourceTags = resourceToEdit.tags || [];
+                const foundCategory = categories.find(c => resourceTags.includes(c.name));
+                setCategory(foundCategory ? foundCategory.name : "");
+
+                const otherTags = resourceTags.filter(t => !foundCategory || t !== foundCategory.name);
+                setTags(otherTags.join(", "));
+            } else {
+                setTitle("");
+                setUrl("");
+                setDescription("");
+                setCategory("");
+                setTags("");
+                setActiveTab("Link");
+            }
         }
-    }, [isOpen]);
+    }
 
     const handleSubmit = () => {
         // Basic validation
@@ -58,7 +80,7 @@ export default function AddResourceDialog({ isOpen, onClose, onAdd, categories }
             <DialogContent className="bg-[#0b1120] border-slate-800 text-slate-200 sm:max-w-[600px] p-0 overflow-hidden gap-0">
                 <DialogHeader className="p-6 pb-4 border-b border-slate-800/50">
                     <DialogTitle className="text-xl font-bold flex items-center justify-between">
-                        Add Resource
+                        {resourceToEdit ? "Edit Resource" : "Add Resource"}
                         {/* Close button is usually handled by Dialog primitive, but we can add one if needed or rely on default */}
                     </DialogTitle>
                 </DialogHeader>
@@ -162,7 +184,7 @@ export default function AddResourceDialog({ isOpen, onClose, onAdd, categories }
                         Cancel
                     </Button>
                     <Button onClick={handleSubmit} className="h-11 bg-[#f59e0b] hover:bg-[#d97706] text-black font-bold px-6 rounded-xl shadow-lg shadow-amber-500/20">
-                        Add Resource
+                        {resourceToEdit ? "Save Changes" : "Add Resource"}
                     </Button>
                 </div>
             </DialogContent>

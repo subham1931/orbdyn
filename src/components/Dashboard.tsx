@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
     LayoutGrid,
     Link as LinkIcon,
@@ -20,7 +22,9 @@ import {
     Folder,
     MoreHorizontal,
     Pencil,
-    Trash2
+    Trash2,
+    Eye,
+    Share2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,6 +39,7 @@ import SettingsPage from "./SettingsPage";
 import AddResourceDialog from "./AddResourceDialog";
 import AddCategoryDialog from "./AddCategoryDialog";
 import DeleteCategoryDialog from "./DeleteCategoryDialog";
+import ResourceDetailView from "./ResourceDetailView";
 import type { Resource, ResourceType, Category } from "@/types";
 
 interface DashboardProps {
@@ -48,6 +53,8 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
     const [isCategoriesExpanded, setIsCategoriesExpanded] = useState(true);
     const [editingCategory, setEditingCategory] = useState<Category | null>(null);
     const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
+    const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
+    const [editingResource, setEditingResource] = useState<Resource | null>(null);
 
     const [resources, setResources] = useState<Resource[]>(() => {
         try {
@@ -137,24 +144,82 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
         setIsCategoryDialogOpen(true);
     };
 
-    const handleAddResource = (newResourceData: {
+    const handleAddResource = (resourceData: {
         title: string;
         type: ResourceType;
         content: string;
         tags: string[];
         url?: string;
     }) => {
-        const newResource: Resource = {
-            id: Date.now().toString(),
-            title: newResourceData.title,
-            type: newResourceData.type,
-            content: newResourceData.content || (newResourceData.url ? newResourceData.url : ""),
-            createdAt: Date.now(),
-            tags: newResourceData.tags,
-            isFavorite: false,
-            isArchived: false
-        };
-        setResources([newResource, ...resources]);
+        if (editingResource) {
+            // Update existing resource
+            setResources(resources.map(r =>
+                r.id === editingResource.id
+                    ? {
+                        ...r,
+                        ...resourceData,
+                        content: resourceData.content || (resourceData.url ? resourceData.url : ""),
+                    }
+                    : r
+            ));
+            setEditingResource(null);
+        } else {
+            // Create new resource
+            const newResource: Resource = {
+                id: Date.now().toString(),
+                title: resourceData.title,
+                type: resourceData.type,
+                content: resourceData.content || (resourceData.url ? resourceData.url : ""),
+                createdAt: Date.now(),
+                tags: resourceData.tags,
+                isFavorite: false,
+                isArchived: false,
+                url: resourceData.url
+            };
+            setResources([newResource, ...resources]);
+        }
+    };
+
+    const handleEditResource = (resource: Resource) => {
+        setEditingResource(resource);
+        setIsAddDialogOpen(true);
+    };
+
+    const handleDeleteResource = (id: string) => {
+        if (confirm("Are you sure you want to delete this resource?")) {
+            setResources(resources.filter(r => r.id !== id));
+        }
+    };
+
+    const handleArchiveResource = (id: string) => {
+        setResources(resources.map(r =>
+            r.id === id ? { ...r, isArchived: !r.isArchived } : r
+        ));
+    };
+
+    const handleExportResource = (resource: Resource) => {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(resource, null, 2));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", `${resource.title.replace(/\s+/g, '_')}.json`);
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+    };
+
+    const handleShareResource = (resource: Resource) => {
+        const textToShare = `${resource.title}\n${resource.content}\n${resource.url || ''}`;
+        if (navigator.share) {
+            navigator.share({
+                title: resource.title,
+                text: resource.content,
+                url: resource.url
+            }).catch(console.error);
+        } else {
+            navigator.clipboard.writeText(textToShare).then(() => {
+                alert("Resource details copied to clipboard!");
+            });
+        }
     };
 
     const toggleFavorite = (id: string) => {
@@ -354,26 +419,70 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                 <div className="flex-1 flex flex-col overflow-y-auto">
                     {activeTab === "Settings" ? (
                         <SettingsPage onSignOut={onSignOut} />
+                    ) : selectedResource ? (
+                        <div className="flex-1 p-6 h-full overflow-hidden">
+                            <ResourceDetailView
+                                resource={selectedResource}
+                                onBack={() => setSelectedResource(null)}
+                                categories={categories}
+                            />
+                        </div>
                     ) : (
                         <div className="flex-1 flex flex-col p-8">
                             {filteredResources.length > 0 ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-7xl mx-auto">
                                     {filteredResources.map((resource) => (
-                                        <div key={resource.id} className="group relative bg-[#0f172a] border border-slate-800 rounded-2xl p-6 hover:border-slate-700 hover:shadow-xl transition-all duration-300">
-                                            <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button
-                                                    onClick={() => toggleFavorite(resource.id)}
-                                                    className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-yellow-400 transition-colors"
-                                                >
-                                                    <Star className={`w-4 h-4 ${resource.isFavorite ? "fill-yellow-400 text-yellow-400" : ""}`} />
-                                                </button>
-                                                <button className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors">
-                                                    <Settings className="w-4 h-4" />
-                                                </button>
-                                            </div>
+                                        <Card
+                                            key={resource.id}
+                                            onClick={() => setSelectedResource(resource)}
+                                            className="group relative bg-[#0f172a] border-slate-800 hover:border-slate-700 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 overflow-hidden cursor-pointer"
+                                        >
+                                            <CardHeader className="pb-3 relative">
+                                                <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            toggleFavorite(resource.id);
+                                                        }}
+                                                        className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-yellow-400 transition-colors"
+                                                    >
+                                                        <Star className={`w-4 h-4 ${resource.isFavorite ? "fill-yellow-400 text-yellow-400" : ""}`} />
+                                                    </button>
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <button
+                                                                onClick={(e) => e.stopPropagation()}
+                                                                className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
+                                                            >
+                                                                <MoreHorizontal className="w-4 h-4" />
+                                                            </button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end" className="w-48 bg-[#0f172a] border-slate-800 text-slate-200 shadow-xl shadow-black/50 p-1.5">
+                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setSelectedResource(resource); }} className="group hover:bg-slate-800 focus:bg-slate-800 focus:text-white cursor-pointer gap-2.5 text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-300">
+                                                                <Eye className="w-3.5 h-3.5 text-slate-400 group-focus:text-white transition-colors" /> View Details
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditResource(resource); }} className="group hover:bg-slate-800 focus:bg-slate-800 focus:text-white cursor-pointer gap-2.5 text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-300">
+                                                                <Pencil className="w-3.5 h-3.5 text-slate-400 group-focus:text-white transition-colors" /> Edit Resource
+                                                            </DropdownMenuItem>
+                                                            <div className="h-px bg-slate-800 my-1.5 mx-1" />
+                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleExportResource(resource); }} className="group hover:bg-slate-800 focus:bg-slate-800 focus:text-white cursor-pointer gap-2.5 text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-300">
+                                                                <Download className="w-3.5 h-3.5 text-slate-400 group-focus:text-white transition-colors" /> Export
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleShareResource(resource); }} className="group hover:bg-slate-800 focus:bg-slate-800 focus:text-white cursor-pointer gap-2.5 text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-300">
+                                                                <Share2 className="w-3.5 h-3.5 text-slate-400 group-focus:text-white transition-colors" /> Share
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleArchiveResource(resource.id); }} className="group hover:bg-slate-800 focus:bg-slate-800 focus:text-white cursor-pointer gap-2.5 text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-300">
+                                                                <Archive className="w-3.5 h-3.5 text-slate-400 group-focus:text-white transition-colors" /> {resource.isArchived ? "Unarchive" : "Archive"}
+                                                            </DropdownMenuItem>
+                                                            <div className="h-px bg-slate-800 my-1.5 mx-1" />
+                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDeleteResource(resource.id); }} className="group hover:bg-red-500/10 focus:bg-red-500/10 text-red-400 focus:text-red-400 cursor-pointer gap-2.5 text-xs font-medium px-2.5 py-2 rounded-md transition-colors">
+                                                                <Trash2 className="w-3.5 h-3.5 group-focus:text-red-400 transition-colors" /> Delete
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </div>
 
-                                            <div className="mb-4">
-                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 ${resource.type === 'Link' ? 'bg-blue-500/10 text-blue-400' :
+                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${resource.type === 'Link' ? 'bg-blue-500/10 text-blue-400' :
                                                     resource.type === 'Note' ? 'bg-emerald-500/10 text-emerald-400' :
                                                         'bg-purple-500/10 text-purple-400'
                                                     }`}>
@@ -381,23 +490,39 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                                                     {resource.type === 'Note' && <FileText className="w-5 h-5" />}
                                                     {resource.type === 'To Do' && <CheckSquare className="w-5 h-5" />}
                                                 </div>
-                                                <h3 className="text-lg font-bold text-white mb-2 line-clamp-1">{resource.title}</h3>
+                                                <CardTitle className="text-lg font-bold text-white pt-4 line-clamp-1 border-none">{resource.title}</CardTitle>
+                                            </CardHeader>
+
+                                            <CardContent className="pb-4">
                                                 <p className="text-slate-400 text-sm line-clamp-3 leading-relaxed">
                                                     {resource.content}
                                                 </p>
-                                            </div>
+                                            </CardContent>
 
-                                            <div className="flex items-center gap-2 mt-4 pt-4 border-t border-slate-800/50">
-                                                {resource.tags?.map(tag => (
-                                                    <span key={tag} className="px-2 py-1 rounded-md bg-slate-800 text-slate-400 text-[10px] font-bold uppercase tracking-wider">
-                                                        {tag}
-                                                    </span>
-                                                ))}
-                                                <span className="ml-auto text-xs font-medium text-slate-600">
+                                            <CardFooter className="pt-4 border-t border-slate-800/50 flex justify-between items-center bg-[#020617]/20">
+                                                <div className="flex gap-2 flex-wrap">
+                                                    {resource.tags?.map(tag => {
+                                                        const category = categories.find(c => c.name === tag);
+                                                        return (
+                                                            <Badge
+                                                                key={tag}
+                                                                variant="secondary"
+                                                                className={`border-none rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider transition-colors ${!category ? 'bg-slate-800/50 text-slate-400 hover:bg-slate-700 hover:text-slate-200' : ''}`}
+                                                                style={category ? {
+                                                                    backgroundColor: `${category.color}26`, // ~15% opacity
+                                                                    color: category.color
+                                                                } : undefined}
+                                                            >
+                                                                {tag}
+                                                            </Badge>
+                                                        );
+                                                    })}
+                                                </div>
+                                                <span className="text-xs font-medium text-slate-600">
                                                     {new Date(resource.createdAt).toLocaleDateString()}
                                                 </span>
-                                            </div>
-                                        </div>
+                                            </CardFooter>
+                                        </Card>
                                     ))}
                                 </div>
                             ) : (
@@ -438,9 +563,13 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
 
                 <AddResourceDialog
                     isOpen={isAddDialogOpen}
-                    onClose={() => setIsAddDialogOpen(false)}
+                    onClose={() => {
+                        setIsAddDialogOpen(false);
+                        setEditingResource(null);
+                    }}
                     onAdd={handleAddResource}
                     categories={categories}
+                    resourceToEdit={editingResource}
                 />
 
                 <AddCategoryDialog
@@ -459,6 +588,7 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                     onConfirm={confirmDeleteCategory}
                     categoryName={categoryToDelete?.name}
                 />
+
             </main>
         </div>
     );

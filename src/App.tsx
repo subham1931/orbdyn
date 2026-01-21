@@ -4,12 +4,24 @@ import AuthPage from './components/AuthPage'
 import Dashboard from './components/Dashboard'
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<'landing' | 'auth' | 'dashboard'>('landing');
+  const [currentPage, setCurrentPage] = useState<'landing' | 'auth' | 'dashboard'>(() => {
+    return localStorage.getItem("orbdyn_auth_token") ? "dashboard" : "landing";
+  });
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
 
   const handleNavigateToAuth = (mode: 'signin' | 'signup') => {
     setAuthMode(mode);
     setCurrentPage('auth');
+  };
+
+  const handleAuthSuccess = () => {
+    localStorage.setItem("orbdyn_auth_token", "true");
+    setCurrentPage('dashboard');
+  };
+
+  const handleSignOut = () => {
+    localStorage.removeItem("orbdyn_auth_token");
+    setCurrentPage('landing');
   };
 
   return (
@@ -25,13 +37,13 @@ function App() {
         <AuthPage
           initialMode={authMode}
           onBack={() => setCurrentPage('landing')}
-          onSuccess={() => setCurrentPage('dashboard')}
+          onSuccess={handleAuthSuccess}
         />
       )}
 
       {currentPage === 'dashboard' && (
         <Dashboard
-          onSignOut={() => setCurrentPage('landing')}
+          onSignOut={handleSignOut}
         />
       )}
     </div>

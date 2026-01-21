@@ -9,6 +9,7 @@ export interface Resource {
     tags?: string[];
     isFavorite?: boolean;
     isArchived?: boolean;
+    url?: string;
 }
 
 export interface Category {
