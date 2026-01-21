@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -59,11 +59,19 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
     const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
     const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
     const [editingResource, setEditingResource] = useState<Resource | null>(null);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [filterCategory, setFilterCategory] = useState<string>("All");
+    const [filterDateFrom, setFilterDateFrom] = useState<string>("");
+    const [filterDateTo, setFilterDateTo] = useState<string>("");
+    const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
+    const filterRef = useRef<HTMLDivElement>(null);
 
     const [resources, setResources] = useState<Resource[]>(() => {
         try {
             const saved = localStorage.getItem("orbdyn_resources");
-            return saved ? JSON.parse(saved) : [];
+            if (!saved) return [];
+            const parsed = JSON.parse(saved);
+            return Array.isArray(parsed) ? parsed : [];
         } catch (error) {
             console.error("Failed to parse resources from local storage:", error);
             return [];
@@ -77,12 +85,13 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
     const [categories, setCategories] = useState<Category[]>(() => {
         try {
             const saved = localStorage.getItem("orbdyn_categories");
-            if (!saved) {
-                return [];
-            }
+            if (!saved) return [];
             const parsed = JSON.parse(saved);
+
+            if (!Array.isArray(parsed)) return [];
+
             // Handle legacy string array support
-            if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === 'string') {
+            if (parsed.length > 0 && typeof parsed[0] === 'string') {
                 return parsed.map((name: string, index: number) => ({
                     id: Date.now().toString() + index,
                     name,
@@ -98,6 +107,20 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
     useEffect(() => {
         localStorage.setItem("orbdyn_categories", JSON.stringify(categories));
     }, [categories]);
+
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+                setIsFilterPopoverOpen(false);
+            }
+        }
+        if (isFilterPopoverOpen) {
+            document.addEventListener("mousedown", handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [isFilterPopoverOpen]);
 
     const handleSaveCategory = (categoryData: Omit<Category, "id">) => {
         if (editingCategory) {
@@ -270,19 +293,42 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
     };
 
     const filteredResources = resources.filter(r => {
-        if (activeTab === "All Resources") return !r.isArchived;
-        if (activeTab === "Links") return r.type === "Link" && !r.isArchived;
-        if (activeTab === "Notes") return r.type === "Note" && !r.isArchived;
-        if (activeTab === "To Do") return r.type === "To Do" && !r.isArchived;
-        if (activeTab === "Favorites") return r.isFavorite && !r.isArchived;
-        if (activeTab === "Archive") return r.isArchived;
+        // Search filter
+        const searchTarget = `${r.title} ${r.description || ""} ${r.content}`.toLowerCase();
+        if (searchQuery && !searchTarget.includes(searchQuery.toLowerCase())) return false;
 
-        // Filter by category (checking if category name exists in tags)
-        if (categories.some(c => c.name === activeTab)) {
-            return r.tags?.includes(activeTab) && !r.isArchived;
+        // View filter (Sidebar tabs)
+        let matchesTab = false;
+        const isArchived = !!r.isArchived;
+        const isFavorite = !!r.isFavorite;
+        if (activeTab === "All Resources") matchesTab = !isArchived;
+        else if (activeTab === "Links") matchesTab = r.type === "Link" && !isArchived;
+        else if (activeTab === "Notes") matchesTab = r.type === "Note" && !isArchived;
+        else if (activeTab === "To Do") matchesTab = r.type === "To Do" && !isArchived;
+        else if (activeTab === "Favorites") matchesTab = isFavorite && !isArchived;
+        else if (activeTab === "Archive") matchesTab = isArchived;
+        else if (categories.some(c => c.name === activeTab)) {
+            matchesTab = (r.tags?.includes(activeTab) ?? false) && !isArchived;
         }
 
-        return false;
+        if (!matchesTab) return false;
+
+        // Category filter (independent of activeTab)
+        if (filterCategory !== "All" && !(r.tags?.includes(filterCategory) ?? false)) return false;
+
+        // Date range filter
+        if (filterDateFrom) {
+            const fromDate = new Date(filterDateFrom);
+            fromDate.setHours(0, 0, 0, 0);
+            if (new Date(r.createdAt) < fromDate) return false;
+        }
+        if (filterDateTo) {
+            const toDate = new Date(filterDateTo);
+            toDate.setHours(23, 59, 59, 999);
+            if (new Date(r.createdAt) > toDate) return false;
+        }
+
+        return true;
     });
 
     const menuItems = [
@@ -425,25 +471,120 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
             {/* Main Content */}
             <main className="flex-1 flex flex-col relative z-10 overflow-hidden">
                 {/* Header */}
-                <header className="h-16 border-b border-slate-900 flex items-center justify-between px-8 bg-[#020617]/50 backdrop-blur-xl">
+                <header className="h-16 border-b border-slate-900 flex items-center justify-between px-8 bg-[#020617]/50 backdrop-blur-xl shrink-0 relative z-20">
                     <div className="relative w-96 max-w-full">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                         <Input
                             placeholder="Search resources..."
-                            className="bg-[#0f172a] border-[#1e293b] h-10 pl-10 rounded-lg focus:ring-1 focus:ring-blue-500/50 transition-all placeholder:text-slate-600 text-sm"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="bg-[#0f172a] border-[#1e293b] h-10 pl-10 rounded-lg focus:ring-1 focus:ring-blue-500/50 transition-all placeholder:text-slate-600 text-sm w-full"
                         />
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" className="h-9 bg-transparent border-[#1e293b] text-slate-300 hover:text-white hover:bg-[#1e293b] rounded-lg gap-2 font-medium px-4 text-xs transition-colors">
-                            <Filter className="w-3.5 h-3.5" /> Filters
-                        </Button>
+                        <div className="relative" ref={filterRef}>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setIsFilterPopoverOpen(!isFilterPopoverOpen)}
+                                className={`h-9 bg-transparent border-[#1e293b] text-slate-300 hover:text-white hover:bg-[#1e293b] rounded-lg gap-2 font-medium px-4 text-xs transition-colors ${isFilterPopoverOpen ? 'bg-[#1e293b] text-white border-blue-500/50' : ''}`}
+                            >
+                                <Filter className="w-3.5 h-3.5" /> Filters
+                                {(filterCategory !== "All" || filterDateFrom || filterDateTo) && (
+                                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                                )}
+                            </Button>
+
+                            {isFilterPopoverOpen && (
+                                <div className="absolute right-0 mt-3 w-80 bg-[#0f172a] border border-slate-800 rounded-2xl shadow-2xl p-6 z-50 animate-in fade-in zoom-in-95 duration-200">
+                                    <div className="space-y-6">
+                                        <div className="flex items-center justify-between">
+                                            <h3 className="text-sm font-bold text-white uppercase tracking-widest">Advanced Filters</h3>
+                                            <button
+                                                onClick={() => {
+                                                    setFilterCategory("All");
+                                                    setFilterDateFrom("");
+                                                    setFilterDateTo("");
+                                                }}
+                                                className="text-[10px] font-bold text-slate-500 hover:text-blue-400 transition-colors uppercase tracking-widest"
+                                            >
+                                                Reset All
+                                            </button>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">By Category</label>
+                                            <select
+                                                value={filterCategory}
+                                                onChange={(e) => setFilterCategory(e.target.value)}
+                                                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500/50 appearance-none cursor-pointer"
+                                            >
+                                                <option value="All">All Categories</option>
+                                                {categories.map(cat => (
+                                                    <option key={cat.id} value={cat.name}>{cat.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Date Range</label>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="space-y-1.5">
+                                                    <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">From</span>
+                                                    <input
+                                                        type="date"
+                                                        value={filterDateFrom}
+                                                        onChange={(e) => setFilterDateFrom(e.target.value)}
+                                                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-2 text-[11px] text-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500/50 [color-scheme:dark]"
+                                                    />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">To</span>
+                                                    <input
+                                                        type="date"
+                                                        value={filterDateTo}
+                                                        onChange={(e) => setFilterDateTo(e.target.value)}
+                                                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-2 text-[11px] text-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500/50 [color-scheme:dark]"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-2">
+                                            <Button
+                                                onClick={() => setIsFilterPopoverOpen(false)}
+                                                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold h-10 rounded-xl shadow-lg shadow-blue-500/20"
+                                            >
+                                                Apply Filters
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
                         <Button variant="outline" size="sm" className="h-9 bg-transparent border-[#1e293b] text-slate-300 hover:text-white hover:bg-[#1e293b] rounded-lg gap-2 font-medium px-4 text-xs transition-colors">
                             <ArrowUpDown className="w-3.5 h-3.5" /> Custom
                         </Button>
-                        <Button variant="outline" size="sm" className="h-9 bg-transparent border-[#1e293b] text-slate-300 hover:text-white hover:bg-[#1e293b] rounded-lg gap-2 font-medium px-4 text-xs transition-colors">
-                            <Download className="w-3.5 h-3.5" /> Export
-                        </Button>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm" className="h-9 bg-transparent border-[#1e293b] text-slate-300 hover:text-white hover:bg-[#1e293b] data-[state=open]:bg-[#1e293b] data-[state=open]:text-white rounded-lg gap-2 font-medium px-4 text-xs transition-colors">
+                                    <Download className="w-3.5 h-3.5" /> Export
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="bg-[#0f172a] border-slate-800 text-slate-200 shadow-xl p-1.5 min-w-[140px]">
+                                <DropdownMenuItem onClick={() => { }} className="hover:bg-slate-800 focus:bg-slate-800 cursor-pointer text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-300">
+                                    As JSON
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => { }} className="hover:bg-slate-800 focus:bg-slate-800 cursor-pointer text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-300">
+                                    As Markdown
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => { }} className="hover:bg-blue-600 focus:bg-blue-600 focus:text-white cursor-pointer text-xs font-bold px-2.5 py-2 rounded-md transition-colors text-slate-300">
+                                    As PDF
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                         <Button variant="outline" size="sm" className="h-9 bg-transparent border-[#1e293b] text-slate-300 hover:text-white hover:bg-[#1e293b] rounded-lg gap-2 font-medium px-4 text-xs transition-colors">
                             <Upload className="w-3.5 h-3.5" /> Import
                         </Button>
@@ -465,6 +606,9 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                             <ResourceDetailView
                                 resource={selectedResource}
                                 onBack={() => setSelectedResource(null)}
+                                onEdit={handleEditResource}
+                                onFavorite={toggleFavorite}
+                                onShare={handleShareResource}
                                 categories={categories}
                             />
                         </div>
@@ -646,6 +790,6 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                 />
 
             </main>
-        </div>
+        </div >
     );
 }

@@ -85,3 +85,13 @@
 .office-card {
   @apply bg-card border-border/50 hover:border-primary/50 hover:shadow-md transition-all duration-300;
 }
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
