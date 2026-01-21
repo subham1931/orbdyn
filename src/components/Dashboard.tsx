@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
     LayoutGrid,
     Link as LinkIcon,
@@ -28,8 +28,45 @@ interface DashboardProps {
     onSignOut: () => void;
 }
 
+export type ResourceType = "Link" | "Note" | "To Do";
+
+export interface Resource {
+    id: string;
+    title: string;
+    type: ResourceType;
+    content: string;
+    createdAt: number;
+    tags?: string[];
+    isFavorite?: boolean;
+    isArchived?: boolean;
+}
+
 export default function Dashboard({ onSignOut }: DashboardProps) {
     const [activeTab, setActiveTab] = useState("All Resources");
+    const [resources, setResources] = useState<Resource[]>(() => {
+        const saved = localStorage.getItem("orbdyn_resources");
+        return saved ? JSON.parse(saved) : [];
+    });
+
+    useEffect(() => {
+        localStorage.setItem("orbdyn_resources", JSON.stringify(resources));
+    }, [resources]);
+
+    const toggleFavorite = (id: string) => {
+        setResources(resources.map(r =>
+            r.id === id ? { ...r, isFavorite: !r.isFavorite } : r
+        ));
+    };
+
+    const filteredResources = resources.filter(r => {
+        if (activeTab === "All Resources") return !r.isArchived;
+        if (activeTab === "Links") return r.type === "Link" && !r.isArchived;
+        if (activeTab === "Notes") return r.type === "Note" && !r.isArchived;
+        if (activeTab === "To Do") return r.type === "To Do" && !r.isArchived;
+        if (activeTab === "Favorites") return r.isFavorite && !r.isArchived;
+        if (activeTab === "Archive") return r.isArchived;
+        return false;
+    });
 
     const menuItems = [
         { name: "All Resources", icon: LayoutGrid },
@@ -144,22 +181,79 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                     {activeTab === "Settings" ? (
                         <SettingsPage onSignOut={onSignOut} />
                     ) : (
-                        <div className="flex-1 flex flex-col items-center justify-center p-8">
-                            <div className="max-w-md w-full text-center space-y-6">
-                                <div className="inline-flex items-center justify-center w-20 h-20 rounded-[2rem] bg-slate-900 border border-slate-800 text-slate-500 shadow-inner">
-                                    <Folder className="w-10 h-10" />
+                        <div className="flex-1 flex flex-col p-8">
+                            {filteredResources.length > 0 ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-7xl mx-auto">
+                                    {filteredResources.map((resource) => (
+                                        <div key={resource.id} className="group relative bg-[#0f172a] border border-slate-800 rounded-2xl p-6 hover:border-slate-700 hover:shadow-xl transition-all duration-300">
+                                            <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={() => toggleFavorite(resource.id)}
+                                                    className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-yellow-400 transition-colors"
+                                                >
+                                                    <Star className={`w-4 h-4 ${resource.isFavorite ? "fill-yellow-400 text-yellow-400" : ""}`} />
+                                                </button>
+                                                <button className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors">
+                                                    <Settings className="w-4 h-4" />
+                                                </button>
+                                            </div>
+
+                                            <div className="mb-4">
+                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 ${resource.type === 'Link' ? 'bg-blue-500/10 text-blue-400' :
+                                                    resource.type === 'Note' ? 'bg-emerald-500/10 text-emerald-400' :
+                                                        'bg-purple-500/10 text-purple-400'
+                                                    }`}>
+                                                    {resource.type === 'Link' && <LinkIcon className="w-5 h-5" />}
+                                                    {resource.type === 'Note' && <FileText className="w-5 h-5" />}
+                                                    {resource.type === 'To Do' && <CheckSquare className="w-5 h-5" />}
+                                                </div>
+                                                <h3 className="text-lg font-bold text-white mb-2 line-clamp-1">{resource.title}</h3>
+                                                <p className="text-slate-400 text-sm line-clamp-3 leading-relaxed">
+                                                    {resource.content}
+                                                </p>
+                                            </div>
+
+                                            <div className="flex items-center gap-2 mt-4 pt-4 border-t border-slate-800/50">
+                                                {resource.tags?.map(tag => (
+                                                    <span key={tag} className="px-2 py-1 rounded-md bg-slate-800 text-slate-400 text-[10px] font-bold uppercase tracking-wider">
+                                                        {tag}
+                                                    </span>
+                                                ))}
+                                                <span className="ml-auto text-xs font-medium text-slate-600">
+                                                    {new Date(resource.createdAt).toLocaleDateString()}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
-                                <div className="space-y-2">
-                                    <h2 className="text-2xl font-bold text-white tracking-tight">No resources yet</h2>
-                                    <p className="text-slate-500 font-medium">
-                                        Start building your journal by adding links, notes, and professional resources.
-                                    </p>
+                            ) : (
+                                <div className="flex-1 flex flex-col items-center justify-center">
+                                    <div className="max-w-md w-full text-center space-y-6">
+                                        <div className="inline-flex items-center justify-center w-20 h-20 rounded-[2rem] bg-slate-900 border border-slate-800 text-slate-500 shadow-inner">
+                                            {activeTab === "Links" ? <LinkIcon className="w-10 h-10" /> :
+                                                activeTab === "Notes" ? <FileText className="w-10 h-10" /> :
+                                                    activeTab === "To Do" ? <CheckSquare className="w-10 h-10" /> :
+                                                        activeTab === "Favorites" ? <Star className="w-10 h-10" /> :
+                                                            activeTab === "Archive" ? <Archive className="w-10 h-10" /> :
+                                                                <Folder className="w-10 h-10" />}
+                                        </div>
+                                        <div className="space-y-2">
+                                            <h2 className="text-2xl font-bold text-white tracking-tight">
+                                                {activeTab === "All Resources" ? "No resources yet" : `No ${activeTab.toLowerCase()} yet`}
+                                            </h2>
+                                            <p className="text-slate-500 font-medium">
+                                                {activeTab === "All Resources"
+                                                    ? "Start building your journal by adding links, notes, and professional resources."
+                                                    : `You haven't added any ${activeTab.toLowerCase()} to your collection yet.`}
+                                            </p>
+                                        </div>
+                                        <Button className="h-14 bg-[#f59e0b] hover:bg-[#d97706] text-black px-8 rounded-2xl font-bold text-lg shadow-xl shadow-amber-500/20 group border-none">
+                                            <Plus className="w-5 h-5 group-hover:scale-110 transition-transform mr-2" />
+                                            Add {activeTab === "All Resources" ? "Resource" : activeTab.slice(0, -1)}
+                                        </Button>
+                                    </div>
                                 </div>
-                                <Button className="h-14 bg-[#f59e0b] hover:bg-[#d97706] text-black px-8 rounded-2xl font-bold text-lg shadow-xl shadow-amber-500/20 group border-none">
-                                    <Plus className="w-5 h-5 group-hover:scale-110 transition-transform mr-2" />
-                                    Add Your First Resource
-                                </Button>
-                            </div>
+                            )}
                         </div>
                     )}
                 </div>
