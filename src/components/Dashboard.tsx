@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
     LayoutGrid,
     Link as LinkIcon,
@@ -15,42 +16,146 @@ import {
     Settings,
     LogOut,
     ChevronDown,
-    FolderPlus,
     Layout,
-    Folder
+    Folder,
+    MoreHorizontal,
+    Pencil,
+    Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 import SettingsPage from "./SettingsPage";
+import AddResourceDialog from "./AddResourceDialog";
+import AddCategoryDialog from "./AddCategoryDialog";
+import DeleteCategoryDialog from "./DeleteCategoryDialog";
+import type { Resource, ResourceType, Category } from "@/types";
 
 interface DashboardProps {
     onSignOut: () => void;
 }
 
-export type ResourceType = "Link" | "Note" | "To Do";
-
-export interface Resource {
-    id: string;
-    title: string;
-    type: ResourceType;
-    content: string;
-    createdAt: number;
-    tags?: string[];
-    isFavorite?: boolean;
-    isArchived?: boolean;
-}
-
 export default function Dashboard({ onSignOut }: DashboardProps) {
     const [activeTab, setActiveTab] = useState("All Resources");
+    const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+    const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
+    const [isCategoriesExpanded, setIsCategoriesExpanded] = useState(true);
+    const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+    const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
+
     const [resources, setResources] = useState<Resource[]>(() => {
-        const saved = localStorage.getItem("orbdyn_resources");
-        return saved ? JSON.parse(saved) : [];
+        try {
+            const saved = localStorage.getItem("orbdyn_resources");
+            return saved ? JSON.parse(saved) : [];
+        } catch (error) {
+            console.error("Failed to parse resources from local storage:", error);
+            return [];
+        }
     });
 
     useEffect(() => {
         localStorage.setItem("orbdyn_resources", JSON.stringify(resources));
     }, [resources]);
+
+    const [categories, setCategories] = useState<Category[]>(() => {
+        try {
+            const saved = localStorage.getItem("orbdyn_categories");
+            if (!saved) {
+                return [];
+            }
+            const parsed = JSON.parse(saved);
+            // Handle legacy string array support
+            if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === 'string') {
+                return parsed.map((name: string, index: number) => ({
+                    id: Date.now().toString() + index,
+                    name,
+                    color: "#3b82f6" // Default blue
+                }));
+            }
+            return parsed;
+        } catch {
+            return [];
+        }
+    });
+
+    useEffect(() => {
+        localStorage.setItem("orbdyn_categories", JSON.stringify(categories));
+    }, [categories]);
+
+    const handleSaveCategory = (categoryData: Omit<Category, "id">) => {
+        if (editingCategory) {
+            // Update active tab if we're editing the currently active category
+            if (activeTab === editingCategory.name) {
+                setActiveTab(categoryData.name);
+            }
+
+            // Edit mode
+            setCategories(categories.map(c =>
+                c.id === editingCategory.id
+                    ? { ...c, ...categoryData }
+                    : c
+            ));
+            setEditingCategory(null);
+        } else {
+            // Add mode
+            const newCategory: Category = {
+                id: Date.now().toString(),
+                ...categoryData
+            };
+            setCategories([...categories, newCategory]);
+        }
+        setIsCategoryDialogOpen(false);
+    };
+
+    const handleDeleteCategory = (category: Category) => {
+        setCategoryToDelete(category);
+    };
+
+    const confirmDeleteCategory = () => {
+        if (categoryToDelete) {
+            setCategories(categories.filter(c => c.id !== categoryToDelete.id));
+            if (activeTab === categoryToDelete.name) {
+                setActiveTab("All Resources");
+            }
+            setCategoryToDelete(null);
+        }
+    };
+
+    const openEditCategoryDialog = (category: Category) => {
+        setEditingCategory(category);
+        setIsCategoryDialogOpen(true);
+    };
+
+    const openAddCategoryDialog = () => {
+        setEditingCategory(null);
+        setIsCategoryDialogOpen(true);
+    };
+
+    const handleAddResource = (newResourceData: {
+        title: string;
+        type: ResourceType;
+        content: string;
+        tags: string[];
+        url?: string;
+    }) => {
+        const newResource: Resource = {
+            id: Date.now().toString(),
+            title: newResourceData.title,
+            type: newResourceData.type,
+            content: newResourceData.content || (newResourceData.url ? newResourceData.url : ""),
+            createdAt: Date.now(),
+            tags: newResourceData.tags,
+            isFavorite: false,
+            isArchived: false
+        };
+        setResources([newResource, ...resources]);
+    };
 
     const toggleFavorite = (id: string) => {
         setResources(resources.map(r =>
@@ -65,6 +170,12 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
         if (activeTab === "To Do") return r.type === "To Do" && !r.isArchived;
         if (activeTab === "Favorites") return r.isFavorite && !r.isArchived;
         if (activeTab === "Archive") return r.isArchived;
+
+        // Filter by category (checking if category name exists in tags)
+        if (categories.some(c => c.name === activeTab)) {
+            return r.tags?.includes(activeTab) && !r.isArchived;
+        }
+
         return false;
     });
 
@@ -79,8 +190,10 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
 
     return (
         <div className="flex h-screen bg-[#020617] text-slate-200 font-sans overflow-hidden">
-            {/* Sidebar */}
+            {/* ... Sidebar ... */}
+
             <aside className="w-64 border-r border-slate-900 flex flex-col z-20">
+                {/* ... Sidebar Content ... */}
                 <div className="p-6 pb-2">
                     <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
@@ -90,33 +203,94 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                     </div>
                 </div>
 
-                <nav className="flex-1 px-4 space-y-4 overflow-y-auto mt-6">
-                    {menuItems.map((item) => (
-                        <button
-                            key={item.name}
-                            onClick={() => setActiveTab(item.name)}
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${activeTab === item.name
-                                ? "bg-[#1e293b] text-blue-400 shadow-sm"
-                                : "text-slate-400 hover:text-white hover:bg-white/5"
-                                }`}
-                        >
-                            <item.icon className={`w-4 h-4 ${activeTab === item.name ? "text-blue-400" : "text-slate-500 group-hover:text-white"}`} />
-                            {item.name}
-                        </button>
-                    ))}
-
-                    <div className="pt-8 pb-4">
-                        <div className="flex items-center justify-between px-3 mb-2">
-                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                                Categories <ChevronDown className="w-3 h-3" />
-                            </span>
-                        </div>
-                        <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all">
-                            <FolderPlus className="w-4 h-4" />
-                            Add Category
-                        </button>
+                <ScrollArea className="flex-1 px-4 mt-6">
+                    <div className="space-y-1 mb-6">
+                        {menuItems.map((item) => (
+                            <button
+                                key={item.name}
+                                onClick={() => setActiveTab(item.name)}
+                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 group relative overflow-hidden ${activeTab === item.name
+                                    ? "text-blue-400 bg-blue-500/10"
+                                    : "text-slate-400 hover:text-white hover:bg-white/5"
+                                    }`}
+                            >
+                                {activeTab === item.name && (
+                                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-blue-500 rounded-full" />
+                                )}
+                                <item.icon className={`w-4 h-4 transition-colors ${activeTab === item.name ? "text-blue-400" : "text-slate-500 group-hover:text-slate-300"}`} />
+                                {item.name}
+                            </button>
+                        ))}
                     </div>
-                </nav>
+
+                    <div className="pb-4">
+                        <div className="flex items-center justify-between px-3 mb-2">
+                            <button
+                                onClick={() => setIsCategoriesExpanded(!isCategoriesExpanded)}
+                                className="flex items-center gap-2 group cursor-pointer hover:text-slate-300 transition-colors"
+                            >
+                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest group-hover:text-slate-400 transition-colors">
+                                    Categories
+                                </span>
+                                <ChevronDown className={`w-3 h-3 text-slate-600 transition-transform duration-200 group-hover:text-slate-400 ${!isCategoriesExpanded ? '-rotate-90' : ''}`} />
+                            </button>
+
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    openAddCategoryDialog();
+                                }}
+                                className="p-1 rounded-md text-slate-500 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
+                            >
+                                <Plus className="w-3.5 h-3.5" />
+                            </button>
+                        </div>
+
+                        {isCategoriesExpanded && (
+                            <div className="animate-in slide-in-from-top-2 duration-300 fade-in space-y-1">
+                                <div className="space-y-0.5 mb-3">
+                                    {categories.map((category) => (
+                                        <div key={category.id} className="group relative flex items-center">
+                                            <div
+                                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${activeTab === category.name
+                                                    ? "text-white bg-white/10"
+                                                    : "text-slate-400"
+                                                    }`}
+                                            >
+                                                <div
+                                                    className={`w-2 h-2 rounded-full transition-all duration-300 ${activeTab === category.name ? 'scale-125 shadow-[0_0_8px_rgba(0,0,0,0.5)]' : ''}`}
+                                                    style={{
+                                                        backgroundColor: category.color,
+                                                        boxShadow: activeTab === category.name ? `0 0 10px ${category.color}` : 'none'
+                                                    }}
+                                                />
+                                                <span className="truncate flex-1 text-left">{category.name}</span>
+                                            </div>
+
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <button className="absolute right-2 opacity-0 group-hover:opacity-100 p-1.5 hover:bg-slate-700/50 rounded-md text-slate-400 hover:text-white transition-all">
+                                                        <MoreHorizontal className="w-4 h-4" />
+                                                    </button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="w-40 bg-[#0f172a] border-slate-800 text-slate-200 shadow-xl shadow-black/50">
+                                                    <DropdownMenuItem onClick={() => openEditCategoryDialog(category)} className="hover:bg-slate-800 focus:bg-slate-800 cursor-pointer gap-2 text-xs font-medium">
+                                                        <Pencil className="w-3.5 h-3.5" /> Edit
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleDeleteCategory(category)} className="hover:bg-red-500/10 focus:bg-red-500/10 text-red-400 focus:text-red-400 cursor-pointer gap-2 text-xs font-medium">
+                                                        <Trash2 className="w-3.5 h-3.5" /> Delete
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
+                                    ))}
+                                </div>
+
+
+                            </div>
+                        )}
+                    </div>
+                </ScrollArea>
 
                 <div className="p-4 border-t border-slate-900 space-y-3">
                     <div className="px-3 py-3 mb-2">
@@ -170,7 +344,7 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                         <Button variant="outline" size="sm" className="h-9 bg-transparent border-[#1e293b] text-slate-300 hover:text-white hover:bg-[#1e293b] rounded-lg gap-2 font-medium px-4 text-xs transition-colors">
                             <CheckSquare className="w-3.5 h-3.5" /> Select
                         </Button>
-                        <Button className="h-9 bg-[#f59e0b] hover:bg-[#d97706] text-black rounded-lg gap-2 font-bold px-5 ml-2 border-none">
+                        <Button onClick={() => setIsAddDialogOpen(true)} className="h-9 bg-[#f59e0b] hover:bg-[#d97706] text-black rounded-lg gap-2 font-bold px-5 ml-2 border-none">
                             <Plus className="w-4 h-4" /> Add
                         </Button>
                     </div>
@@ -227,29 +401,29 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                                     ))}
                                 </div>
                             ) : (
-                                <div className="flex-1 flex flex-col items-center justify-center">
-                                    <div className="max-w-md w-full text-center space-y-6">
-                                        <div className="inline-flex items-center justify-center w-20 h-20 rounded-[2rem] bg-slate-900 border border-slate-800 text-slate-500 shadow-inner">
-                                            {activeTab === "Links" ? <LinkIcon className="w-10 h-10" /> :
-                                                activeTab === "Notes" ? <FileText className="w-10 h-10" /> :
-                                                    activeTab === "To Do" ? <CheckSquare className="w-10 h-10" /> :
-                                                        activeTab === "Favorites" ? <Star className="w-10 h-10" /> :
-                                                            activeTab === "Archive" ? <Archive className="w-10 h-10" /> :
-                                                                <Folder className="w-10 h-10" />}
+                                <div className="flex-1 flex flex-col items-center justify-start pt-20">
+                                    <div className="max-w-sm w-full text-center space-y-4">
+                                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-[1.5rem] bg-slate-900 border border-slate-800 text-slate-500 shadow-inner mb-2">
+                                            {activeTab === "Links" ? <LinkIcon className="w-8 h-8" /> :
+                                                activeTab === "Notes" ? <FileText className="w-8 h-8" /> :
+                                                    activeTab === "To Do" ? <CheckSquare className="w-8 h-8" /> :
+                                                        activeTab === "Favorites" ? <Star className="w-8 h-8" /> :
+                                                            activeTab === "Archive" ? <Archive className="w-8 h-8" /> :
+                                                                <Folder className="w-8 h-8" />}
                                         </div>
-                                        <div className="space-y-2">
-                                            <h2 className="text-2xl font-bold text-white tracking-tight">
+                                        <div className="space-y-1">
+                                            <h2 className="text-xl font-bold text-white tracking-tight">
                                                 {activeTab === "All Resources" ? "No resources yet" : `No ${activeTab.toLowerCase()} yet`}
                                             </h2>
-                                            <p className="text-slate-500 font-medium">
+                                            <p className="text-slate-500 text-sm font-medium leading-relaxed">
                                                 {activeTab === "All Resources"
                                                     ? "Start building your journal by adding links, notes, and professional resources."
                                                     : `You haven't added any ${activeTab.toLowerCase()} to your collection yet.`}
                                             </p>
                                         </div>
-                                        <Button className="h-14 bg-[#f59e0b] hover:bg-[#d97706] text-black px-8 rounded-2xl font-bold text-lg shadow-xl shadow-amber-500/20 group border-none">
-                                            <Plus className="w-5 h-5 group-hover:scale-110 transition-transform mr-2" />
-                                            Add {activeTab === "All Resources" ? "Resource" : activeTab.slice(0, -1)}
+                                        <Button onClick={() => setIsAddDialogOpen(true)} className="h-11 bg-[#f59e0b] hover:bg-[#d97706] text-black px-6 rounded-xl font-bold text-sm shadow-xl shadow-amber-500/10 group border-none mt-2">
+                                            <Plus className="w-4 h-4 group-hover:scale-110 transition-transform mr-2" />
+                                            Add Resource
                                         </Button>
                                     </div>
                                 </div>
@@ -261,6 +435,30 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                 {/* Ambient background decoration */}
                 <div className="absolute top-[20%] right-[10%] w-[30%] h-[30%] rounded-full bg-blue-600/5 blur-[120px] pointer-events-none" />
                 <div className="absolute bottom-[20%] left-[10%] w-[30%] h-[30%] rounded-full bg-indigo-600/5 blur-[120px] pointer-events-none" />
+
+                <AddResourceDialog
+                    isOpen={isAddDialogOpen}
+                    onClose={() => setIsAddDialogOpen(false)}
+                    onAdd={handleAddResource}
+                    categories={categories}
+                />
+
+                <AddCategoryDialog
+                    isOpen={isCategoryDialogOpen}
+                    onClose={() => {
+                        setIsCategoryDialogOpen(false);
+                        setEditingCategory(null);
+                    }}
+                    onSave={handleSaveCategory}
+                    categoryToEdit={editingCategory}
+                />
+
+                <DeleteCategoryDialog
+                    isOpen={!!categoryToDelete}
+                    onClose={() => setCategoryToDelete(null)}
+                    onConfirm={confirmDeleteCategory}
+                    categoryName={categoryToDelete?.name}
+                />
             </main>
         </div>
     );
