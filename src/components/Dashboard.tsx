@@ -84,6 +84,8 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
     const [isSelectionMode, setIsSelectionMode] = useState(false);
     const [selectedResourceIds, setSelectedResourceIds] = useState<Set<string>>(new Set());
     const filterRef = useRef<HTMLDivElement>(null);
+    const importInputRef = useRef<HTMLInputElement>(null);
+    const [currentImportType, setCurrentImportType] = useState<'json' | 'md' | 'pdf' | null>(null);
 
     const [theme, setTheme] = useState<"light" | "dark">(() => {
         const saved = localStorage.getItem("orbdyn_theme");
@@ -312,6 +314,86 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
         }
         setSelectedResourceIds(new Set());
         setIsSelectionMode(false);
+    };
+
+    const handleImportClick = (type: 'json' | 'md' | 'pdf') => {
+        setCurrentImportType(type);
+        if (importInputRef.current) {
+            importInputRef.current.value = '';
+            importInputRef.current.click();
+        }
+    };
+
+    const handleFileImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file || !currentImportType) return;
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const content = e.target?.result;
+            if (typeof content !== 'string') return;
+
+            if (currentImportType === 'json') {
+                try {
+                    const data = JSON.parse(content);
+                    const additions: Resource[] = [];
+                    const processItem = (item: Partial<Resource>) => {
+                        const res: Resource = {
+                            id: (item.id || Date.now() + Math.random()).toString(),
+                            title: item.title || "Imported Resource",
+                            type: item.type || "Note",
+                            content: item.content || item.url || "No content",
+                            createdAt: item.createdAt || Date.now(),
+                            tags: Array.isArray(item.tags) ? item.tags : ["Imported"],
+                            url: item.url,
+                            description: item.description,
+                            isFavorite: !!item.isFavorite,
+                            isArchived: !!item.isArchived,
+                            isDeleted: !!item.isDeleted,
+                            priority: item.priority || 'Medium'
+                        };
+                        additions.push(res);
+                    };
+
+                    if (Array.isArray(data)) {
+                        data.forEach(processItem);
+                    } else {
+                        processItem(data);
+                    }
+
+                    setResources(prev => [...prev, ...additions]);
+                } catch (err) {
+                    console.error("Failed to parse JSON:", err);
+                }
+            } else if (currentImportType === 'md') {
+                const title = file.name.replace(/\.[^/.]+$/, "");
+                const newRes: Resource = {
+                    id: Date.now().toString(),
+                    title: title,
+                    type: "Note",
+                    content: content,
+                    createdAt: Date.now(),
+                    tags: ["Imported", "Markdown"],
+                    priority: 'Medium'
+                };
+                setResources(prev => [...prev, newRes]);
+            } else if (currentImportType === 'pdf') {
+                // PDF processing (Basic metadata extraction/placeholder)
+                const title = file.name.replace(/\.[^/.]+$/, "");
+                const newRes: Resource = {
+                    id: Date.now().toString(),
+                    title: title,
+                    type: "Note",
+                    content: `Reference to: ${file.name}\nSize: ${(file.size / 1024).toFixed(1)} KB\nImported on: ${new Date().toLocaleString()}`,
+                    createdAt: Date.now(),
+                    tags: ["Imported", "PDF"],
+                    priority: 'Medium'
+                };
+                setResources(prev => [...prev, newRes]);
+            }
+        };
+
+        reader.readAsText(file);
     };
 
     const handleExportResource = (resource: Resource, format: 'json' | 'md' | 'pdf' = 'json') => {
@@ -767,9 +849,24 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
-                        <Button variant="outline" size="sm" className="h-9 bg-transparent border-slate-200 dark:border-[#1e293b] text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#1e293b] rounded-lg gap-2 font-medium px-4 text-xs transition-colors">
-                            <Upload className="w-3.5 h-3.5" /> Import
-                        </Button>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm" className="h-9 bg-transparent border-slate-200 dark:border-[#1e293b] text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#1e293b] rounded-lg gap-2 font-medium px-4 text-xs transition-colors">
+                                    <Upload className="w-3.5 h-3.5" /> Import
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="bg-white dark:bg-[#0f172a] border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-200 shadow-xl p-1.5 min-w-[140px] transition-colors">
+                                <DropdownMenuItem onClick={() => handleImportClick('json')} className="hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-slate-100 dark:focus:bg-slate-800 cursor-pointer text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-600 dark:text-slate-300 gap-2">
+                                    <FileText className="w-3.5 h-3.5 opacity-50" /> From JSON
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleImportClick('md')} className="hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-slate-100 dark:focus:bg-slate-800 cursor-pointer text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-600 dark:text-slate-300 gap-2">
+                                    <FileText className="w-3.5 h-3.5 opacity-50" /> From Markdown
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleImportClick('pdf')} className="hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-slate-100 dark:focus:bg-slate-800 cursor-pointer text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-600 dark:text-slate-300 gap-2">
+                                    <FileText className="w-3.5 h-3.5 opacity-50" /> From PDF
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                         <Button
                             variant="outline"
                             size="sm"
@@ -1101,6 +1198,18 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                     onClose={() => setResourceToDelete(null)}
                     onConfirm={confirmDeleteResource}
                     resourceTitle={resourceToDelete?.title}
+                />
+
+                <input
+                    type="file"
+                    ref={importInputRef}
+                    onChange={handleFileImport}
+                    className="hidden"
+                    accept={
+                        currentImportType === 'json' ? '.json' :
+                            currentImportType === 'md' ? '.md,.markdown' :
+                                currentImportType === 'pdf' ? '.pdf' : '*'
+                    }
                 />
 
             </main>
