@@ -49,6 +49,7 @@ import AddCategoryDialog from "./AddCategoryDialog";
 import DeleteCategoryDialog from "./DeleteCategoryDialog";
 import DeleteResourceDialog from "./DeleteResourceDialog";
 import ResourceDetailView from "./ResourceDetailView";
+import ValidationDialog from "./ValidationDialog";
 import type { Resource, ResourceType, Category } from "@/types";
 
 interface DashboardProps {
@@ -86,6 +87,7 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
     const filterRef = useRef<HTMLDivElement>(null);
     const importInputRef = useRef<HTMLInputElement>(null);
     const [currentImportType, setCurrentImportType] = useState<'json' | 'md' | 'pdf' | null>(null);
+    const [validationError, setValidationError] = useState<{ title: string; description: string } | null>(null);
 
     const [theme, setTheme] = useState<"light" | "dark">(() => {
         const saved = localStorage.getItem("orbdyn_theme");
@@ -219,6 +221,20 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
         dueTime?: string;
         priority?: 'Low' | 'Medium' | 'High';
     }) => {
+        // Validation: Check for duplicate title (case-insensitive)
+        const isDuplicate = resources.some(r =>
+            r.title.toLowerCase() === resourceData.title.toLowerCase() &&
+            (!editingResource || r.id !== editingResource.id)
+        );
+
+        if (isDuplicate) {
+            setValidationError({
+                title: "Duplicate Title",
+                description: `A resource with the title "${resourceData.title}" already exists in your collection (or Recycle Bin). Each resource must have a unique identifier.`
+            });
+            return;
+        }
+
         if (editingResource) {
             // Update existing resource
             setResources(resources.map(r =>
@@ -237,6 +253,7 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                     : r
             ));
             setEditingResource(null);
+            setIsAddDialogOpen(false); // Close dialog on success
         } else {
             // Create new resource
             const newResource: Resource = {
@@ -257,6 +274,7 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                 priority: resourceData.priority
             };
             setResources([newResource, ...resources]);
+            setIsAddDialogOpen(false); // Close dialog on success
         }
     };
 
@@ -333,14 +351,24 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
             const content = e.target?.result;
             if (typeof content !== 'string') return;
 
+            const existingTitles = new Set(resources.map(r => r.title.toLowerCase()));
+
             if (currentImportType === 'json') {
                 try {
                     const data = JSON.parse(content);
                     const additions: Resource[] = [];
+                    const duplicates: string[] = [];
+
                     const processItem = (item: Partial<Resource>) => {
+                        const title = item.title || "Imported Resource";
+                        if (existingTitles.has(title.toLowerCase())) {
+                            duplicates.push(title);
+                            return;
+                        }
+
                         const res: Resource = {
                             id: (item.id || Date.now() + Math.random()).toString(),
-                            title: item.title || "Imported Resource",
+                            title: title,
                             type: item.type || "Note",
                             content: item.content || item.url || "No content",
                             createdAt: item.createdAt || Date.now(),
@@ -353,6 +381,7 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                             priority: item.priority || 'Medium'
                         };
                         additions.push(res);
+                        existingTitles.add(title.toLowerCase());
                     };
 
                     if (Array.isArray(data)) {
@@ -361,12 +390,31 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                         processItem(data);
                     }
 
-                    setResources(prev => [...prev, ...additions]);
+                    if (duplicates.length > 0) {
+                        setValidationError({
+                            title: "Duplicate Detected",
+                            description: duplicates.length === 1
+                                ? `The resource "${duplicates[0]}" was skipped because it already exists in your collection.`
+                                : `${duplicates.length} items were skipped because they already exist in your collection: ${duplicates.join(", ")}`
+                        });
+                    }
+
+                    if (additions.length > 0) {
+                        setResources(prev => [...additions, ...prev]);
+                    }
                 } catch (err) {
                     console.error("Failed to parse JSON:", err);
                 }
             } else if (currentImportType === 'md') {
                 const title = file.name.replace(/\.[^/.]+$/, "");
+                if (existingTitles.has(title.toLowerCase())) {
+                    setValidationError({
+                        title: "Already Exists",
+                        description: `A resource titled "${title}" is already in your collection. Please rename your Markdown file or the existing resource to proceed.`
+                    });
+                    return;
+                }
+
                 const newRes: Resource = {
                     id: Date.now().toString(),
                     title: title,
@@ -376,10 +424,17 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                     tags: ["Imported", "Markdown"],
                     priority: 'Medium'
                 };
-                setResources(prev => [...prev, newRes]);
+                setResources(prev => [newRes, ...prev]);
             } else if (currentImportType === 'pdf') {
-                // PDF processing (Basic metadata extraction/placeholder)
                 const title = file.name.replace(/\.[^/.]+$/, "");
+                if (existingTitles.has(title.toLowerCase())) {
+                    setValidationError({
+                        title: "Already Exists",
+                        description: `A resource titled "${title}" is already in your collection. Please rename your PDF file or the existing resource to proceed.`
+                    });
+                    return;
+                }
+
                 const newRes: Resource = {
                     id: Date.now().toString(),
                     title: title,
@@ -389,7 +444,7 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                     tags: ["Imported", "PDF"],
                     priority: 'Medium'
                 };
-                setResources(prev => [...prev, newRes]);
+                setResources(prev => [newRes, ...prev]);
             }
         };
 
@@ -885,7 +940,7 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                 </header>
 
                 {/* Content Area */}
-                <div className="flex-1 flex flex-col overflow-y-auto">
+                <div className="flex-1 flex flex-col overflow-y-auto no-scrollbar">
                     {activeTab === "Settings" ? (
                         <SettingsPage theme={theme} onThemeChange={setTheme} />
                     ) : activeTab === "Main" ? (
@@ -1198,6 +1253,13 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                     onClose={() => setResourceToDelete(null)}
                     onConfirm={confirmDeleteResource}
                     resourceTitle={resourceToDelete?.title}
+                />
+
+                <ValidationDialog
+                    isOpen={!!validationError}
+                    onClose={() => setValidationError(null)}
+                    title={validationError?.title}
+                    description={validationError?.description || ""}
                 />
 
                 <input

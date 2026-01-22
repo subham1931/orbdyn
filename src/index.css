@@ -69,12 +69,22 @@
 @layer base {
   * {
     @apply border-border;
+    &::-webkit-scrollbar {
+      display: none;
+    }
+    scrollbar-width: none;
+    -ms-overflow-style: none;
   }
+  html,
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings:
       "rlig" 1,
       "calt" 1;
+    overflow: hidden !important;
+    height: 100%;
+    width: 100%;
+    position: fixed;
   }
 }
 
