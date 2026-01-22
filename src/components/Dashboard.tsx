@@ -50,6 +50,8 @@ interface DashboardProps {
     onSignOut: () => void;
 }
 
+type SortOption = 'custom' | 'title-az' | 'title-za' | 'date-newest' | 'date-oldest' | 'favorites-first' | 'priority-high' | 'type';
+
 export default function Dashboard({ onSignOut }: DashboardProps) {
     const [activeTab, setActiveTab] = useState("All Resources");
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -64,6 +66,7 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
     const [filterDateFrom, setFilterDateFrom] = useState<string>("");
     const [filterDateTo, setFilterDateTo] = useState<string>("");
     const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
+    const [sortBy, setSortBy] = useState<SortOption>('date-newest');
     const filterRef = useRef<HTMLDivElement>(null);
 
     const [theme, setTheme] = useState<"light" | "dark">(() => {
@@ -345,6 +348,30 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
         return true;
     });
 
+    const sortedResources = [...filteredResources].sort((a, b) => {
+        switch (sortBy) {
+            case 'title-az': return a.title.localeCompare(b.title);
+            case 'title-za': return b.title.localeCompare(a.title);
+            case 'date-newest': return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+            case 'date-oldest': return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+            case 'favorites-first':
+                if (a.isFavorite && !b.isFavorite) return -1;
+                if (!a.isFavorite && b.isFavorite) return 1;
+                return 0;
+            case 'priority-high': {
+                const priorityOrder = { High: 0, Medium: 1, Low: 2, undefined: 3 };
+                const ap = priorityOrder[a.priority as keyof typeof priorityOrder] ?? 3;
+                const bp = priorityOrder[b.priority as keyof typeof priorityOrder] ?? 3;
+                return ap - bp;
+            }
+            case 'type':
+                return a.type.localeCompare(b.type);
+            case 'custom':
+            default:
+                return 0;
+        }
+    });
+
     const menuItems = [
         { name: "All Resources", icon: LayoutGrid },
         { name: "Links", icon: LinkIcon },
@@ -578,9 +605,49 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                             )}
                         </div>
 
-                        <Button variant="outline" size="sm" className="h-9 bg-transparent border-slate-200 dark:border-[#1e293b] text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#1e293b] rounded-lg gap-2 font-medium px-4 text-xs transition-colors">
-                            <ArrowUpDown className="w-3.5 h-3.5" /> Custom
-                        </Button>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm" className="h-9 bg-transparent border-slate-200 dark:border-[#1e293b] text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#1e293b] data-[state=open]:bg-slate-100 dark:data-[state=open]:bg-[#1e293b] data-[state=open]:text-slate-900 dark:data-[state=open]:text-white rounded-lg gap-2 font-medium px-4 text-xs transition-colors">
+                                    <ArrowUpDown className="w-3.5 h-3.5" />
+                                    {sortBy === 'custom' ? 'Custom' :
+                                        sortBy === 'title-az' ? 'Title (A-Z)' :
+                                            sortBy === 'title-za' ? 'Title (Z-A)' :
+                                                sortBy === 'date-newest' ? 'Newest' :
+                                                    sortBy === 'date-oldest' ? 'Oldest' :
+                                                        sortBy === 'favorites-first' ? 'Favorites' :
+                                                            sortBy === 'priority-high' ? 'Priority' : 'Type'}
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="bg-white dark:bg-[#0f172a] border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-200 shadow-xl p-1.5 min-w-[160px] transition-colors">
+                                <DropdownMenuItem onClick={() => setSortBy('custom')} className={`hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-slate-100 dark:focus:bg-slate-800 cursor-pointer text-xs font-medium px-2.5 py-2 rounded-md transition-colors ${sortBy === 'custom' ? 'text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-500/10' : 'text-slate-600 dark:text-slate-300'}`}>
+                                    Custom Order
+                                </DropdownMenuItem>
+                                <div className="h-px bg-slate-100 dark:bg-slate-800 my-1 mx-1" />
+                                <DropdownMenuItem onClick={() => setSortBy('title-az')} className={`hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-slate-100 dark:focus:bg-slate-800 cursor-pointer text-xs font-medium px-2.5 py-2 rounded-md transition-colors ${sortBy === 'title-az' ? 'text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-500/10' : 'text-slate-600 dark:text-slate-300'}`}>
+                                    Title (A-Z)
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setSortBy('title-za')} className={`hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-slate-100 dark:focus:bg-slate-800 cursor-pointer text-xs font-medium px-2.5 py-2 rounded-md transition-colors ${sortBy === 'title-za' ? 'text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-500/10' : 'text-slate-600 dark:text-slate-300'}`}>
+                                    Title (Z-A)
+                                </DropdownMenuItem>
+                                <div className="h-px bg-slate-100 dark:bg-slate-800 my-1 mx-1" />
+                                <DropdownMenuItem onClick={() => setSortBy('date-newest')} className={`hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-slate-100 dark:focus:bg-slate-800 cursor-pointer text-xs font-medium px-2.5 py-2 rounded-md transition-colors ${sortBy === 'date-newest' ? 'text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-500/10' : 'text-slate-600 dark:text-slate-300'}`}>
+                                    Date Created (Newest)
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setSortBy('date-oldest')} className={`hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-slate-100 dark:focus:bg-slate-800 cursor-pointer text-xs font-medium px-2.5 py-2 rounded-md transition-colors ${sortBy === 'date-oldest' ? 'text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-500/10' : 'text-slate-600 dark:text-slate-300'}`}>
+                                    Date Created (Oldest)
+                                </DropdownMenuItem>
+                                <div className="h-px bg-slate-100 dark:bg-slate-800 my-1 mx-1" />
+                                <DropdownMenuItem onClick={() => setSortBy('favorites-first')} className={`hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-slate-100 dark:focus:bg-slate-800 cursor-pointer text-xs font-medium px-2.5 py-2 rounded-md transition-colors ${sortBy === 'favorites-first' ? 'text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-500/10' : 'text-slate-600 dark:text-slate-300'}`}>
+                                    Favorites First
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setSortBy('priority-high')} className={`hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-slate-100 dark:focus:bg-slate-800 cursor-pointer text-xs font-medium px-2.5 py-2 rounded-md transition-colors ${sortBy === 'priority-high' ? 'text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-500/10' : 'text-slate-600 dark:text-slate-300'}`}>
+                                    Priority (High to Low)
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setSortBy('type')} className={`hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-slate-100 dark:focus:bg-slate-800 cursor-pointer text-xs font-medium px-2.5 py-2 rounded-md transition-colors ${sortBy === 'type' ? 'text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-500/10' : 'text-slate-600 dark:text-slate-300'}`}>
+                                    Type (A-Z)
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="outline" size="sm" className="h-9 bg-transparent border-slate-200 dark:border-[#1e293b] text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white data-[state=open]:bg-slate-100 dark:data-[state=open]:bg-[#1e293b] data-[state=open]:text-slate-900 dark:data-[state=open]:text-white rounded-lg gap-2 font-medium px-4 text-xs transition-colors">
@@ -629,9 +696,9 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                         </div>
                     ) : (
                         <div className="flex-1 flex flex-col p-8">
-                            {filteredResources.length > 0 ? (
+                            {sortedResources.length > 0 ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-7xl mx-auto">
-                                    {filteredResources.map((resource) => (
+                                    {sortedResources.map((resource) => (
                                         <Card
                                             key={resource.id}
                                             onClick={() => setSelectedResource(resource)}
