@@ -66,6 +66,20 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
     const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
     const filterRef = useRef<HTMLDivElement>(null);
 
+    const [theme, setTheme] = useState<"light" | "dark">(() => {
+        const saved = localStorage.getItem("orbdyn_theme");
+        return (saved as "light" | "dark") || "dark";
+    });
+
+    useEffect(() => {
+        if (theme === "dark") {
+            document.documentElement.classList.add("dark");
+        } else {
+            document.documentElement.classList.remove("dark");
+        }
+        localStorage.setItem("orbdyn_theme", theme);
+    }, [theme]);
+
     const [resources, setResources] = useState<Resource[]>(() => {
         try {
             const saved = localStorage.getItem("orbdyn_resources");
@@ -341,17 +355,17 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
     ];
 
     return (
-        <div className="flex h-screen bg-[#020617] text-slate-200 font-sans overflow-hidden">
+        <div className="flex h-screen bg-slate-50 dark:bg-[#020617] text-slate-900 dark:text-slate-200 font-sans overflow-hidden transition-colors duration-300">
             {/* ... Sidebar ... */}
 
-            <aside className="w-64 border-r border-slate-900 flex flex-col z-20">
+            <aside className="w-64 border-r border-slate-200 dark:border-slate-900 flex flex-col bg-white dark:bg-[#020617] z-20 transition-colors duration-300">
                 {/* ... Sidebar Content ... */}
                 <div className="p-6 pb-2">
                     <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
                             <Layout className="text-white w-5 h-5" />
                         </div>
-                        <span className="text-xl font-black tracking-wider text-white uppercase font-sans">Orbdyn</span>
+                        <span className="text-xl font-bold tracking-wider text-slate-900 dark:text-white uppercase font-sans">Orbdyn</span>
                     </div>
                 </div>
 
@@ -362,14 +376,14 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                                 key={item.name}
                                 onClick={() => setActiveTab(item.name)}
                                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 group relative overflow-hidden ${activeTab === item.name
-                                    ? "text-blue-400 bg-blue-500/10"
-                                    : "text-slate-400 hover:text-white hover:bg-white/5"
+                                    ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10"
+                                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5"
                                     }`}
                             >
                                 {activeTab === item.name && (
                                     <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-blue-500 rounded-full" />
                                 )}
-                                <item.icon className={`w-4 h-4 transition-colors ${activeTab === item.name ? "text-blue-400" : "text-slate-500 group-hover:text-slate-300"}`} />
+                                <item.icon className={`w-4 h-4 transition-colors ${activeTab === item.name ? "text-blue-600 dark:text-blue-400" : "text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-300"}`} />
                                 {item.name}
                             </button>
                         ))}
@@ -405,8 +419,8 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                                         <div key={category.id} className="group relative flex items-center">
                                             <div
                                                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${activeTab === category.name
-                                                    ? "text-white bg-white/10"
-                                                    : "text-slate-400"
+                                                    ? "text-slate-900 dark:text-white bg-slate-100 dark:bg-white/10"
+                                                    : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5"
                                                     }`}
                                             >
                                                 <div
@@ -421,15 +435,15 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
 
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <button className="absolute right-2 opacity-0 group-hover:opacity-100 p-1.5 hover:bg-slate-700/50 rounded-md text-slate-400 hover:text-white transition-all">
+                                                    <button className="absolute right-2 opacity-0 group-hover:opacity-100 p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-md text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all">
                                                         <MoreHorizontal className="w-4 h-4" />
                                                     </button>
                                                 </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="w-40 bg-[#0f172a] border-slate-800 text-slate-200 shadow-xl shadow-black/50">
-                                                    <DropdownMenuItem onClick={() => openEditCategoryDialog(category)} className="hover:bg-slate-800 focus:bg-slate-800 cursor-pointer gap-2 text-xs font-medium">
+                                                <DropdownMenuContent align="end" className="w-40 bg-white dark:bg-[#0f172a] border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-200 shadow-xl shadow-slate-200 dark:shadow-black/50 transition-colors">
+                                                    <DropdownMenuItem onClick={() => openEditCategoryDialog(category)} className="hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-slate-100 dark:focus:bg-slate-800 cursor-pointer gap-2 text-xs font-medium text-slate-600 dark:text-slate-300">
                                                         <Pencil className="w-3.5 h-3.5" /> Edit
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => handleDeleteCategory(category)} className="hover:bg-red-500/10 focus:bg-red-500/10 text-red-400 focus:text-red-400 cursor-pointer gap-2 text-xs font-medium">
+                                                    <DropdownMenuItem onClick={() => handleDeleteCategory(category)} className="hover:bg-red-500/10 focus:bg-red-500/10 text-red-500 dark:text-red-400 cursor-pointer gap-2 text-xs font-medium">
                                                         <Trash2 className="w-3.5 h-3.5" /> Delete
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
@@ -444,15 +458,15 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                     </div>
                 </ScrollArea>
 
-                <div className="p-4 border-t border-slate-900 space-y-3">
+                <div className="p-4 border-t border-slate-200 dark:border-slate-800 space-y-3">
                     <div className="px-3 py-3 mb-2">
-                        <p className="text-xs font-medium text-slate-400 truncate">subham019650@gmail.com</p>
+                        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 truncate">subham019650@gmail.com</p>
                     </div>
                     <button
                         onClick={() => setActiveTab("Settings")}
                         className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${activeTab === "Settings"
-                            ? "bg-blue-500/10 text-blue-400"
-                            : "text-slate-400 hover:text-white hover:bg-white/5"
+                            ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                            : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5"
                             }`}
                     >
                         <Settings className="w-4 h-4" />
@@ -460,7 +474,7 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                     </button>
                     <button
                         onClick={onSignOut}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-500/5 transition-all"
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-500 hover:text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-500/5 transition-all"
                     >
                         <LogOut className="w-4 h-4" />
                         Sign Out
@@ -471,14 +485,14 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
             {/* Main Content */}
             <main className="flex-1 flex flex-col relative z-10 overflow-hidden">
                 {/* Header */}
-                <header className="h-16 border-b border-slate-900 flex items-center justify-between px-8 bg-[#020617]/50 backdrop-blur-xl shrink-0 relative z-20">
+                <header className="h-16 border-b border-slate-200 dark:border-slate-900 flex items-center justify-between px-8 bg-white/70 dark:bg-[#020617]/50 backdrop-blur-xl shrink-0 relative z-20 transition-colors duration-300">
                     <div className="relative w-96 max-w-full">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                         <Input
                             placeholder="Search resources..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="bg-[#0f172a] border-[#1e293b] h-10 pl-10 rounded-lg focus:ring-1 focus:ring-blue-500/50 transition-all placeholder:text-slate-600 text-sm w-full"
+                            className="bg-white dark:bg-[#0f172a] border-slate-200 dark:border-[#1e293b] h-10 pl-10 rounded-lg focus:ring-1 focus:ring-blue-500/50 shadow-sm dark:shadow-none transition-all placeholder:text-slate-500 dark:placeholder:text-slate-600 text-sm w-full text-slate-900 dark:text-white"
                         />
                     </div>
 
@@ -488,7 +502,7 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => setIsFilterPopoverOpen(!isFilterPopoverOpen)}
-                                className={`h-9 bg-transparent border-[#1e293b] text-slate-300 hover:text-white hover:bg-[#1e293b] rounded-lg gap-2 font-medium px-4 text-xs transition-colors ${isFilterPopoverOpen ? 'bg-[#1e293b] text-white border-blue-500/50' : ''}`}
+                                className={`h-9 bg-transparent border-slate-200 dark:border-[#1e293b] text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#1e293b] rounded-lg gap-2 font-medium px-4 text-xs transition-colors ${isFilterPopoverOpen ? 'bg-slate-100 dark:bg-[#1e293b] text-slate-900 dark:text-white border-blue-500/50' : ''}`}
                             >
                                 <Filter className="w-3.5 h-3.5" /> Filters
                                 {(filterCategory !== "All" || filterDateFrom || filterDateTo) && (
@@ -497,10 +511,10 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                             </Button>
 
                             {isFilterPopoverOpen && (
-                                <div className="absolute right-0 mt-3 w-80 bg-[#0f172a] border border-slate-800 rounded-2xl shadow-2xl p-6 z-50 animate-in fade-in zoom-in-95 duration-200">
+                                <div className="absolute right-0 mt-3 w-80 bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-6 z-50 animate-in fade-in zoom-in-95 duration-200 transition-colors">
                                     <div className="space-y-6">
                                         <div className="flex items-center justify-between">
-                                            <h3 className="text-sm font-bold text-white uppercase tracking-widest">Advanced Filters</h3>
+                                            <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest">Advanced Filters</h3>
                                             <button
                                                 onClick={() => {
                                                     setFilterCategory("All");
@@ -518,7 +532,7 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                                             <select
                                                 value={filterCategory}
                                                 onChange={(e) => setFilterCategory(e.target.value)}
-                                                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500/50 appearance-none cursor-pointer"
+                                                className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-900 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500/50 appearance-none cursor-pointer transition-colors"
                                             >
                                                 <option value="All">All Categories</option>
                                                 {categories.map(cat => (
@@ -536,7 +550,7 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                                                         type="date"
                                                         value={filterDateFrom}
                                                         onChange={(e) => setFilterDateFrom(e.target.value)}
-                                                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-2 text-[11px] text-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500/50 [color-scheme:dark]"
+                                                        className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-2 text-[11px] text-slate-900 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500/50 dark:[color-scheme:dark] transition-colors"
                                                     />
                                                 </div>
                                                 <div className="space-y-1.5">
@@ -545,7 +559,7 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                                                         type="date"
                                                         value={filterDateTo}
                                                         onChange={(e) => setFilterDateTo(e.target.value)}
-                                                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-2 text-[11px] text-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500/50 [color-scheme:dark]"
+                                                        className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-2 text-[11px] text-slate-900 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500/50 dark:[color-scheme:dark] transition-colors"
                                                     />
                                                 </div>
                                             </div>
@@ -564,31 +578,31 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                             )}
                         </div>
 
-                        <Button variant="outline" size="sm" className="h-9 bg-transparent border-[#1e293b] text-slate-300 hover:text-white hover:bg-[#1e293b] rounded-lg gap-2 font-medium px-4 text-xs transition-colors">
+                        <Button variant="outline" size="sm" className="h-9 bg-transparent border-slate-200 dark:border-[#1e293b] text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#1e293b] rounded-lg gap-2 font-medium px-4 text-xs transition-colors">
                             <ArrowUpDown className="w-3.5 h-3.5" /> Custom
                         </Button>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="sm" className="h-9 bg-transparent border-[#1e293b] text-slate-300 hover:text-white hover:bg-[#1e293b] data-[state=open]:bg-[#1e293b] data-[state=open]:text-white rounded-lg gap-2 font-medium px-4 text-xs transition-colors">
+                                <Button variant="outline" size="sm" className="h-9 bg-transparent border-slate-200 dark:border-[#1e293b] text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white data-[state=open]:bg-slate-100 dark:data-[state=open]:bg-[#1e293b] data-[state=open]:text-slate-900 dark:data-[state=open]:text-white rounded-lg gap-2 font-medium px-4 text-xs transition-colors">
                                     <Download className="w-3.5 h-3.5" /> Export
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent className="bg-[#0f172a] border-slate-800 text-slate-200 shadow-xl p-1.5 min-w-[140px]">
-                                <DropdownMenuItem onClick={() => { }} className="hover:bg-slate-800 focus:bg-slate-800 cursor-pointer text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-300">
+                            <DropdownMenuContent className="bg-white dark:bg-[#0f172a] border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-200 shadow-xl p-1.5 min-w-[140px] transition-colors">
+                                <DropdownMenuItem onClick={() => { }} className="hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-slate-100 dark:focus:bg-slate-800 cursor-pointer text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-600 dark:text-slate-300">
                                     As JSON
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => { }} className="hover:bg-slate-800 focus:bg-slate-800 cursor-pointer text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-300">
+                                <DropdownMenuItem onClick={() => { }} className="hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-slate-100 dark:focus:bg-slate-800 cursor-pointer text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-600 dark:text-slate-300">
                                     As Markdown
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => { }} className="hover:bg-blue-600 focus:bg-blue-600 focus:text-white cursor-pointer text-xs font-bold px-2.5 py-2 rounded-md transition-colors text-slate-300">
+                                <DropdownMenuItem onClick={() => { }} className="hover:bg-blue-600 focus:bg-blue-600 focus:text-white cursor-pointer text-xs font-bold px-2.5 py-2 rounded-md transition-colors text-slate-700 dark:text-slate-300">
                                     As PDF
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
-                        <Button variant="outline" size="sm" className="h-9 bg-transparent border-[#1e293b] text-slate-300 hover:text-white hover:bg-[#1e293b] rounded-lg gap-2 font-medium px-4 text-xs transition-colors">
+                        <Button variant="outline" size="sm" className="h-9 bg-transparent border-slate-200 dark:border-[#1e293b] text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#1e293b] rounded-lg gap-2 font-medium px-4 text-xs transition-colors">
                             <Upload className="w-3.5 h-3.5" /> Import
                         </Button>
-                        <Button variant="outline" size="sm" className="h-9 bg-transparent border-[#1e293b] text-slate-300 hover:text-white hover:bg-[#1e293b] rounded-lg gap-2 font-medium px-4 text-xs transition-colors">
+                        <Button variant="outline" size="sm" className="h-9 bg-transparent border-slate-200 dark:border-[#1e293b] text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#1e293b] rounded-lg gap-2 font-medium px-4 text-xs transition-colors">
                             <CheckSquare className="w-3.5 h-3.5" /> Select
                         </Button>
                         <Button onClick={() => setIsAddDialogOpen(true)} className="h-9 bg-[#f59e0b] hover:bg-[#d97706] text-black rounded-lg gap-2 font-bold px-5 ml-2 border-none">
@@ -600,7 +614,7 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                 {/* Content Area */}
                 <div className="flex-1 flex flex-col overflow-y-auto">
                     {activeTab === "Settings" ? (
-                        <SettingsPage onSignOut={onSignOut} />
+                        <SettingsPage theme={theme} onThemeChange={setTheme} onSignOut={onSignOut} />
                     ) : selectedResource ? (
                         <div className="flex-1 p-6 h-full overflow-hidden">
                             <ResourceDetailView
@@ -610,6 +624,7 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                                 onFavorite={toggleFavorite}
                                 onShare={handleShareResource}
                                 categories={categories}
+                                theme={theme}
                             />
                         </div>
                     ) : (
@@ -620,7 +635,7 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                                         <Card
                                             key={resource.id}
                                             onClick={() => setSelectedResource(resource)}
-                                            className="group relative bg-[#0f172a] border-slate-800 hover:border-slate-700 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 overflow-hidden cursor-pointer"
+                                            className="group relative bg-white dark:bg-[#0f172a] border-slate-200 dark:border-slate-800 hover:border-blue-500/50 dark:hover:border-slate-700 transition-all duration-300 shadow-sm hover:shadow-xl hover:shadow-blue-500/5 dark:hover:shadow-none hover:-translate-y-1 overflow-hidden cursor-pointer"
                                         >
                                             <CardHeader className="pb-3 relative">
                                                 <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
@@ -629,7 +644,7 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                                                             e.stopPropagation();
                                                             toggleFavorite(resource.id);
                                                         }}
-                                                        className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-yellow-400 transition-colors"
+                                                        className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-yellow-400 transition-colors"
                                                     >
                                                         <Star className={`w-4 h-4 ${resource.isFavorite ? "fill-yellow-400 text-yellow-400" : ""}`} />
                                                     </button>
@@ -637,44 +652,44 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                                                         <DropdownMenuTrigger asChild>
                                                             <button
                                                                 onClick={(e) => e.stopPropagation()}
-                                                                className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
+                                                                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
                                                             >
                                                                 <MoreHorizontal className="w-4 h-4" />
                                                             </button>
                                                         </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end" className="w-48 bg-[#0f172a] border-slate-800 text-slate-200 shadow-xl shadow-black/50 p-1.5">
-                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setSelectedResource(resource); }} className="group hover:bg-slate-800 focus:bg-slate-800 focus:text-white cursor-pointer gap-2.5 text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-300">
-                                                                <Eye className="w-3.5 h-3.5 text-slate-400 group-focus:text-white transition-colors" /> View Details
+                                                        <DropdownMenuContent align="end" className="w-48 bg-white dark:bg-[#0f172a] border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-200 shadow-xl dark:shadow-black/50 p-1.5 transition-colors">
+                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setSelectedResource(resource); }} className="group hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-slate-100 dark:focus:bg-slate-800 focus:text-slate-900 dark:focus:text-white cursor-pointer gap-2.5 text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-600 dark:text-slate-300">
+                                                                <Eye className="w-3.5 h-3.5 text-slate-400 group-focus:text-slate-900 dark:group-focus:text-white transition-colors" /> View Details
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditResource(resource); }} className="group hover:bg-slate-800 focus:bg-slate-800 focus:text-white cursor-pointer gap-2.5 text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-300">
-                                                                <Pencil className="w-3.5 h-3.5 text-slate-400 group-focus:text-white transition-colors" /> Edit Resource
+                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditResource(resource); }} className="group hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-slate-100 dark:focus:bg-slate-800 focus:text-slate-900 dark:focus:text-white cursor-pointer gap-2.5 text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-600 dark:text-slate-300">
+                                                                <Pencil className="w-3.5 h-3.5 text-slate-400 group-focus:text-slate-900 dark:group-focus:text-white transition-colors" /> Edit Resource
                                                             </DropdownMenuItem>
-                                                            <div className="h-px bg-slate-800 my-1.5 mx-1" />
+                                                            <div className="h-px bg-slate-100 dark:bg-slate-800 my-1.5 mx-1" />
                                                             <DropdownMenuSub>
                                                                 <DropdownMenuSubTrigger className="hover:bg-blue-600 focus:bg-blue-600 data-[state=open]:bg-blue-600 hover:text-white focus:text-white data-[state=open]:text-white cursor-pointer gap-2.5 text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-300">
                                                                     <Download className="w-3.5 h-3.5 transition-colors" /> Export
                                                                 </DropdownMenuSubTrigger>
                                                                 <DropdownMenuPortal>
-                                                                    <DropdownMenuSubContent className="bg-[#0f172a] border-slate-800 text-slate-200 shadow-xl p-1.5 min-w-[140px]">
-                                                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleExportResource(resource, 'json'); }} className="hover:bg-slate-800 focus:bg-slate-800 cursor-pointer text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-300 hover:text-slate-300 focus:text-slate-300">
+                                                                    <DropdownMenuSubContent className="bg-white dark:bg-[#0f172a] border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-200 shadow-xl p-1.5 min-w-[140px] transition-colors">
+                                                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleExportResource(resource, 'json'); }} className="hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-slate-100 dark:focus:bg-slate-800 cursor-pointer text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-600 dark:text-slate-300">
                                                                             As JSON
                                                                         </DropdownMenuItem>
-                                                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleExportResource(resource, 'md'); }} className="hover:bg-slate-800 focus:bg-slate-800 cursor-pointer text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-300 hover:text-slate-300 focus:text-slate-300">
+                                                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleExportResource(resource, 'md'); }} className="hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-slate-100 dark:focus:bg-slate-800 cursor-pointer text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-600 dark:text-slate-300">
                                                                             As Markdown
                                                                         </DropdownMenuItem>
-                                                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleExportResource(resource, 'pdf'); }} className="bg-blue-600 hover:bg-blue-600 focus:bg-blue-600 text-white cursor-pointer text-xs font-bold px-2.5 py-2 rounded-md transition-colors">
+                                                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleExportResource(resource, 'pdf'); }} className="bg-blue-600 hover:bg-blue-700 focus:bg-blue-700 text-white cursor-pointer text-xs font-bold px-2.5 py-2 rounded-md transition-colors">
                                                                             As PDF
                                                                         </DropdownMenuItem>
                                                                     </DropdownMenuSubContent>
                                                                 </DropdownMenuPortal>
                                                             </DropdownMenuSub>
-                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleShareResource(resource); }} className="group hover:bg-slate-800 focus:bg-slate-800 focus:text-white cursor-pointer gap-2.5 text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-300">
-                                                                <Share2 className="w-3.5 h-3.5 text-slate-400 group-focus:text-white transition-colors" /> Share
+                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleShareResource(resource); }} className="group hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-slate-100 dark:focus:bg-slate-800 focus:text-slate-900 dark:focus:text-white cursor-pointer gap-2.5 text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-600 dark:text-slate-300">
+                                                                <Share2 className="w-3.5 h-3.5 text-slate-400 group-focus:text-slate-900 dark:group-focus:text-white transition-colors" /> Share
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleArchiveResource(resource.id); }} className="group hover:bg-slate-800 focus:bg-slate-800 focus:text-white cursor-pointer gap-2.5 text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-300">
-                                                                <Archive className="w-3.5 h-3.5 text-slate-400 group-focus:text-white transition-colors" /> {resource.isArchived ? "Unarchive" : "Archive"}
+                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleArchiveResource(resource.id); }} className="group hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-slate-100 dark:focus:bg-slate-800 focus:text-slate-900 dark:focus:text-white cursor-pointer gap-2.5 text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-600 dark:text-slate-300">
+                                                                <Archive className="w-3.5 h-3.5 text-slate-400 group-focus:text-slate-900 dark:group-focus:text-white transition-colors" /> {resource.isArchived ? "Unarchive" : "Archive"}
                                                             </DropdownMenuItem>
-                                                            <div className="h-px bg-slate-800 my-1.5 mx-1" />
+                                                            <div className="h-px bg-slate-100 dark:bg-slate-800 my-1.5 mx-1" />
                                                             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDeleteResource(resource.id); }} className="group hover:bg-red-500/10 focus:bg-red-500/10 text-red-400 focus:text-red-400 cursor-pointer gap-2.5 text-xs font-medium px-2.5 py-2 rounded-md transition-colors">
                                                                 <Trash2 className="w-3.5 h-3.5 group-focus:text-red-400 transition-colors" /> Delete
                                                             </DropdownMenuItem>
@@ -682,24 +697,24 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                                                     </DropdownMenu>
                                                 </div>
 
-                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${resource.type === 'Link' ? 'bg-blue-500/10 text-blue-400' :
-                                                    resource.type === 'Note' ? 'bg-emerald-500/10 text-emerald-400' :
-                                                        'bg-purple-500/10 text-purple-400'
+                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${resource.type === 'Link' ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400' :
+                                                    resource.type === 'Note' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' :
+                                                        'bg-purple-500/10 text-purple-600 dark:text-purple-400'
                                                     }`}>
                                                     {resource.type === 'Link' && <LinkIcon className="w-5 h-5" />}
                                                     {resource.type === 'Note' && <FileText className="w-5 h-5" />}
                                                     {resource.type === 'To Do' && <CheckSquare className="w-5 h-5" />}
                                                 </div>
-                                                <CardTitle className="text-lg font-bold text-white pt-4 line-clamp-1 border-none">{resource.title}</CardTitle>
+                                                <CardTitle className="text-lg font-bold text-slate-900 dark:text-white pt-4 line-clamp-1 border-none">{resource.title}</CardTitle>
                                             </CardHeader>
 
                                             <CardContent className="pb-4">
-                                                <p className="text-slate-400 text-sm line-clamp-3 leading-relaxed">
+                                                <p className="text-slate-600 dark:text-slate-400 text-sm line-clamp-3 leading-relaxed">
                                                     {resource.content}
                                                 </p>
                                             </CardContent>
 
-                                            <CardFooter className="pt-4 border-t border-slate-800/50 flex justify-between items-center bg-[#020617]/20">
+                                            <CardFooter className="pt-4 border-t border-slate-100 dark:border-slate-800/50 flex justify-between items-center bg-slate-50/50 dark:bg-[#020617]/20">
                                                 <div className="flex gap-2 flex-wrap">
                                                     {resource.tags?.map(tag => {
                                                         const category = categories.find(c => c.name === tag);
@@ -707,7 +722,7 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                                                             <Badge
                                                                 key={tag}
                                                                 variant="secondary"
-                                                                className={`border-none rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider transition-colors ${!category ? 'bg-slate-800/50 text-slate-400 hover:bg-slate-700 hover:text-slate-200' : ''}`}
+                                                                className={`border-none rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider transition-colors ${!category ? 'bg-slate-100 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700' : ''}`}
                                                                 style={category ? {
                                                                     backgroundColor: `${category.color}26`, // ~15% opacity
                                                                     color: category.color
@@ -718,7 +733,7 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                                                         );
                                                     })}
                                                 </div>
-                                                <span className="text-xs font-medium text-slate-600">
+                                                <span className="text-xs font-semibold text-slate-500 dark:text-slate-500">
                                                     {new Date(resource.createdAt).toLocaleDateString()}
                                                 </span>
                                             </CardFooter>
@@ -728,7 +743,7 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                             ) : (
                                 <div className="flex-1 flex flex-col items-center justify-start pt-20">
                                     <div className="max-w-sm w-full text-center space-y-4">
-                                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-[1.5rem] bg-slate-900 border border-slate-800 text-slate-500 shadow-inner mb-2">
+                                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-[1.5rem] bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 shadow-inner mb-2 transition-colors">
                                             {activeTab === "Links" ? <LinkIcon className="w-8 h-8" /> :
                                                 activeTab === "Notes" ? <FileText className="w-8 h-8" /> :
                                                     activeTab === "To Do" ? <CheckSquare className="w-8 h-8" /> :
@@ -737,7 +752,7 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                                                                 <Folder className="w-8 h-8" />}
                                         </div>
                                         <div className="space-y-1">
-                                            <h2 className="text-xl font-bold text-white tracking-tight">
+                                            <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
                                                 {activeTab === "All Resources" ? "No resources yet" : `No ${activeTab.toLowerCase()} yet`}
                                             </h2>
                                             <p className="text-slate-500 text-sm font-medium leading-relaxed">
@@ -746,10 +761,12 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                                                     : `You haven't added any ${activeTab.toLowerCase()} to your collection yet.`}
                                             </p>
                                         </div>
-                                        <Button onClick={() => setIsAddDialogOpen(true)} className="h-11 bg-[#f59e0b] hover:bg-[#d97706] text-black px-6 rounded-xl font-bold text-sm shadow-xl shadow-amber-500/10 group border-none mt-2">
-                                            <Plus className="w-4 h-4 group-hover:scale-110 transition-transform mr-2" />
-                                            Add Resource
-                                        </Button>
+                                        {activeTab !== "Archive" && (
+                                            <Button onClick={() => setIsAddDialogOpen(true)} className="h-11 bg-[#f59e0b] hover:bg-[#d97706] text-black px-6 rounded-xl font-bold text-sm shadow-xl shadow-amber-500/10 group border-none mt-2">
+                                                <Plus className="w-4 h-4 group-hover:scale-110 transition-transform mr-2" />
+                                                Add Resource
+                                            </Button>
+                                        )}
                                     </div>
                                 </div>
                             )}

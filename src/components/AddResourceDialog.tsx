@@ -113,8 +113,8 @@ export default function AddResourceDialog({ isOpen, onClose, onAdd, categories, 
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="bg-[#0b1120] border-slate-800 text-slate-200 sm:max-w-[600px] max-h-[85vh] flex flex-col p-0 overflow-hidden gap-0">
-                <DialogHeader className="p-6 pb-4 border-b border-slate-800/50">
+            <DialogContent className="bg-white dark:bg-[#0b1120] border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-200 sm:max-w-[600px] max-h-[85vh] flex flex-col p-0 overflow-hidden gap-0 transition-colors">
+                <DialogHeader className="p-6 pb-4 border-b border-slate-100 dark:border-slate-800/50">
                     <DialogTitle className="text-xl font-bold flex items-center justify-between">
                         {resourceToEdit ? "Edit Resource" : "Add Resource"}
                         {/* Close button is usually handled by Dialog primitive, but we can add one if needed or rely on default */}
@@ -123,14 +123,14 @@ export default function AddResourceDialog({ isOpen, onClose, onAdd, categories, 
 
                 <div className="p-6 space-y-6 overflow-y-auto flex-1">
                     <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ResourceType)} className="w-full">
-                        <TabsList className="grid w-full grid-cols-3 bg-[#1e293b]/50 p-1 h-12 rounded-xl">
-                            <TabsTrigger value="Link" className="gap-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white h-10 rounded-lg transition-all">
+                        <TabsList className="grid w-full grid-cols-3 bg-slate-100 dark:bg-[#1e293b]/50 p-1 h-12 rounded-xl">
+                            <TabsTrigger value="Link" className="gap-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg h-10 rounded-lg transition-all text-slate-500 dark:text-slate-400">
                                 <LinkIcon className="w-4 h-4" /> Link
                             </TabsTrigger>
-                            <TabsTrigger value="Note" className="gap-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white h-10 rounded-lg transition-all">
+                            <TabsTrigger value="Note" className="gap-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg h-10 rounded-lg transition-all text-slate-500 dark:text-slate-400">
                                 <FileText className="w-4 h-4" /> Note
                             </TabsTrigger>
-                            <TabsTrigger value="To Do" className="gap-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white h-10 rounded-lg transition-all">
+                            <TabsTrigger value="To Do" className="gap-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg h-10 rounded-lg transition-all text-slate-500 dark:text-slate-400">
                                 <CheckSquare className="w-4 h-4" /> To Do
                             </TabsTrigger>
                         </TabsList>
@@ -145,7 +145,7 @@ export default function AddResourceDialog({ isOpen, onClose, onAdd, categories, 
                                         placeholder="https://example.com"
                                         value={url}
                                         onChange={(e) => setUrl(e.target.value)}
-                                        className="bg-[#1e293b]/50 border-slate-700 focus:border-blue-500 text-slate-200 h-11 rounded-xl"
+                                        className="bg-slate-50 dark:bg-[#1e293b]/50 border-slate-200 dark:border-slate-700 focus:border-blue-500 text-slate-900 dark:text-slate-200 h-11 rounded-xl transition-colors"
                                     />
                                     <p className="text-[10px] text-slate-500">
                                         Title and description will be auto-filled. PDFs will be downloaded automatically.
@@ -162,7 +162,7 @@ export default function AddResourceDialog({ isOpen, onClose, onAdd, categories, 
                                         placeholder="Enter a title"
                                         value={title}
                                         onChange={(e) => setTitle(e.target.value)}
-                                        className="bg-[#1e293b]/50 border-slate-700 focus:border-blue-500 text-slate-200 h-11 rounded-xl pr-10"
+                                        className="bg-slate-50 dark:bg-[#1e293b]/50 border-slate-200 dark:border-slate-700 focus:border-blue-500 text-slate-900 dark:text-slate-200 h-11 rounded-xl pr-10 transition-colors"
                                     />
                                     <Mic className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 hover:text-white cursor-pointer transition-colors" />
                                 </div>
@@ -179,7 +179,7 @@ export default function AddResourceDialog({ isOpen, onClose, onAdd, categories, 
                                         placeholder="Add a short description/summary..."
                                         value={description}
                                         onChange={(e) => setDescription(e.target.value)}
-                                        className="w-full bg-[#1e293b]/50 border border-slate-700 focus:border-blue-500 focus:outline-none text-slate-200 min-h-[80px] rounded-xl p-3 text-sm resize-none"
+                                        className="w-full bg-slate-50 dark:bg-[#1e293b]/50 border border-slate-200 dark:border-slate-700 focus:border-blue-500 focus:outline-none text-slate-900 dark:text-slate-200 min-h-[80px] rounded-xl p-3 text-sm resize-none transition-colors"
                                     />
                                 </div>
                             </div>
@@ -196,7 +196,7 @@ export default function AddResourceDialog({ isOpen, onClose, onAdd, categories, 
                                                     placeholder="Write your note here..."
                                                     value={noteContent}
                                                     onChange={(e) => setNoteContent(e.target.value)}
-                                                    className="w-full bg-[#1e293b]/50 border border-slate-700 focus:border-blue-500 focus:outline-none text-slate-200 min-h-[150px] rounded-xl p-3 text-sm resize-none font-mono"
+                                                    className="w-full bg-slate-50 dark:bg-[#1e293b]/50 border border-slate-200 dark:border-slate-700 focus:border-blue-500 focus:outline-none text-slate-900 dark:text-slate-200 min-h-[150px] rounded-xl p-3 text-sm resize-none font-mono transition-colors"
                                                 />
                                             </div>
                                         </div>
@@ -212,7 +212,7 @@ export default function AddResourceDialog({ isOpen, onClose, onAdd, categories, 
                                                     type="date"
                                                     value={dueDate}
                                                     onChange={(e) => setDueDate(e.target.value)}
-                                                    className="bg-[#1e293b]/50 border-slate-700 focus:border-blue-500 text-slate-200 h-11 rounded-xl [color-scheme:dark]"
+                                                    className="bg-slate-50 dark:bg-[#1e293b]/50 border-slate-200 dark:border-slate-700 focus:border-blue-500 text-slate-900 dark:text-slate-200 h-11 rounded-xl dark:[color-scheme:dark] transition-colors"
                                                 />
                                             </div>
                                             <div className="space-y-2">
@@ -234,9 +234,9 @@ export default function AddResourceDialog({ isOpen, onClose, onAdd, categories, 
                                                     <DropdownMenuTrigger asChild>
                                                         <Button
                                                             variant="outline"
-                                                            className={`w-full justify-between h-11 rounded-xl bg-[#1e293b]/50 border-slate-700 font-bold ${priority === 'High' ? 'text-rose-500 border-rose-500/30 hover:text-rose-500 hover:bg-[#1e293b]/50' :
-                                                                priority === 'Medium' ? 'text-amber-500 border-amber-500/30 hover:text-amber-500 hover:bg-[#1e293b]/50' :
-                                                                    'text-emerald-500 border-emerald-500/30 hover:text-emerald-500 hover:bg-[#1e293b]/50'
+                                                            className={`w-full justify-between h-11 rounded-xl bg-slate-50 dark:bg-[#1e293b]/50 border-slate-200 dark:border-slate-700 font-bold transition-colors ${priority === 'High' ? 'text-rose-500 border-rose-500/30 hover:text-rose-600 dark:hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-[#1e293b]/50' :
+                                                                priority === 'Medium' ? 'text-amber-500 border-amber-500/30 hover:text-amber-600 dark:hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-[#1e293b]/50' :
+                                                                    'text-emerald-500 border-emerald-500/30 hover:text-emerald-600 dark:hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-[#1e293b]/50'
                                                                 }`}
                                                         >
                                                             <span className="flex items-center gap-2">
@@ -246,7 +246,7 @@ export default function AddResourceDialog({ isOpen, onClose, onAdd, categories, 
                                                             <ChevronDown className="w-4 h-4 opacity-50" />
                                                         </Button>
                                                     </DropdownMenuTrigger>
-                                                    <DropdownMenuContent className="bg-[#0f172a] border-slate-800 w-[180px] p-1.5" align="end">
+                                                    <DropdownMenuContent className="bg-white dark:bg-[#0f172a] border-slate-200 dark:border-slate-800 w-[180px] p-1.5 shadow-xl transition-colors" align="end">
                                                         <DropdownMenuItem
                                                             onClick={() => setPriority('Low')}
                                                             className="text-emerald-500 focus:text-emerald-400 focus:bg-emerald-500/10 gap-3 rounded-lg py-2 font-semibold cursor-pointer"
@@ -345,10 +345,10 @@ export default function AddResourceDialog({ isOpen, onClose, onAdd, categories, 
                                                 <ChevronDown className="w-4 h-4 opacity-50" />
                                             </Button>
                                         </DropdownMenuTrigger>
-                                        <DropdownMenuContent className="bg-[#0f172a] border-slate-800 w-[240px] p-1.5" align="start">
+                                        <DropdownMenuContent className="bg-white dark:bg-[#0f172a] border-slate-200 dark:border-slate-800 w-[240px] p-1.5 shadow-xl transition-colors" align="start">
                                             <DropdownMenuItem
                                                 onClick={() => setCategory("")}
-                                                className="text-slate-400 focus:text-white focus:bg-slate-800 gap-3 rounded-lg py-2 cursor-pointer"
+                                                className="text-slate-500 dark:text-slate-400 focus:text-slate-900 dark:focus:text-white focus:bg-slate-100 dark:focus:bg-slate-800 gap-3 rounded-lg py-2 cursor-pointer transition-colors"
                                             >
                                                 <Folder className="w-4 h-4" /> None
                                             </DropdownMenuItem>
@@ -381,7 +381,7 @@ export default function AddResourceDialog({ isOpen, onClose, onAdd, categories, 
                     </Tabs>
                 </div>
 
-                <div className="p-6 pt-2 border-t border-slate-800/50 flex justify-end gap-3">
+                <div className="p-6 pt-2 border-t border-slate-100 dark:border-slate-800/50 flex justify-end gap-3 transition-colors">
                     <Button variant="ghost" onClick={onClose} className="h-11 rounded-xl text-slate-400 hover:text-white hover:bg-white/5">
                         Cancel
                     </Button>
