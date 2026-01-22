@@ -22,12 +22,26 @@ export default function AuthPage({ onBack, onSuccess, initialMode = "signin" }: 
     const [mode, setMode] = useState<"signin" | "signup">(initialMode);
     const [isLoading, setIsLoading] = useState(false);
 
+    const [name, setName] = useState("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
+
         // Simulate auth
         setTimeout(() => {
             setIsLoading(false);
+
+            // Store user details in localStorage
+            const userData = {
+                name: mode === "signup" ? name : (name || "Subham"), // Default if signing in
+                email: email,
+                avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`
+            };
+            localStorage.setItem("orbdyn_user", JSON.stringify(userData));
+
             onSuccess();
         }, 1500);
     };
@@ -114,6 +128,8 @@ export default function AuthPage({ onBack, onSuccess, initialMode = "signin" }: 
                                                 <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                                                 <Input
                                                     placeholder="Your name"
+                                                    value={name}
+                                                    onChange={(e) => setName(e.target.value)}
                                                     className="bg-slate-950/50 border-slate-800 h-14 pl-12 rounded-2xl focus:ring-blue-500/20 focus:border-blue-500/50 transition-all"
                                                 />
                                             </div>
@@ -128,6 +144,8 @@ export default function AuthPage({ onBack, onSuccess, initialMode = "signin" }: 
                                         <Input
                                             type="email"
                                             placeholder="you@example.com"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
                                             className="bg-slate-950/50 border-slate-800 h-14 pl-12 rounded-2xl focus:ring-blue-500/20 focus:border-blue-500/50 transition-all"
                                             required
                                         />
@@ -148,6 +166,8 @@ export default function AuthPage({ onBack, onSuccess, initialMode = "signin" }: 
                                         <Input
                                             type="password"
                                             placeholder="••••••••"
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
                                             className="bg-slate-950/50 border-slate-800 h-14 pl-12 rounded-2xl focus:ring-blue-500/20 focus:border-blue-500/50 transition-all"
                                             required
                                         />

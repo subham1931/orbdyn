@@ -25,6 +25,8 @@ import {
     Trash2,
     Eye,
     Share2,
+    Home,
+    User,
     RotateCcw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -40,6 +42,7 @@ import {
     DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
 
+import ProfilePage from "./ProfilePage";
 import SettingsPage from "./SettingsPage";
 import AddResourceDialog from "./AddResourceDialog";
 import AddCategoryDialog from "./AddCategoryDialog";
@@ -55,7 +58,15 @@ interface DashboardProps {
 type SortOption = 'custom' | 'title-az' | 'title-za' | 'date-newest' | 'date-oldest' | 'favorites-first' | 'priority-high' | 'type';
 
 export default function Dashboard({ onSignOut }: DashboardProps) {
-    const [activeTab, setActiveTab] = useState("All Resources");
+    const [activeTab, setActiveTab] = useState("Main");
+    const [user] = useState<{ name: string; email: string; avatar: string }>(() => {
+        const stored = localStorage.getItem("orbdyn_user");
+        return stored ? JSON.parse(stored) : {
+            name: "Subham",
+            email: "subham019650@gmail.com",
+            avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Subham"
+        };
+    });
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
     const [isCategoriesExpanded, setIsCategoriesExpanded] = useState(true);
@@ -449,6 +460,7 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
     });
 
     const menuItems = [
+        { name: "Main", icon: Home },
         { name: "All Resources", icon: LayoutGrid },
         { name: "Links", icon: LinkIcon },
         { name: "Notes", icon: FileText },
@@ -456,6 +468,7 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
         { name: "Favorites", icon: Star },
         { name: "Archive", icon: Archive },
         { name: "Recycle Bin", icon: Trash2 },
+        { name: "Profile", icon: User },
     ];
 
     return (
@@ -563,9 +576,21 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                 </ScrollArea>
 
                 <div className="p-4 border-t border-slate-200 dark:border-slate-800 space-y-3">
-                    <div className="px-3 py-3 mb-2">
-                        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 truncate">subham019650@gmail.com</p>
-                    </div>
+                    <button
+                        onClick={() => setActiveTab("Profile")}
+                        className={`w-full flex items-center gap-3 px-3 py-2 mb-2 rounded-xl transition-all group ${activeTab === "Profile"
+                            ? "bg-blue-500/10"
+                            : "hover:bg-slate-100 dark:hover:bg-white/5"
+                            }`}
+                    >
+                        <div className={`w-10 h-10 rounded-full border border-slate-200 dark:border-slate-800 overflow-hidden shrink-0 transition-transform group-hover:scale-110 ${activeTab === "Profile" ? "ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-[#020617]" : ""}`}>
+                            <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                        </div>
+                        <div className="min-w-0 text-left">
+                            <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{user.name}</p>
+                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 truncate">{user.email}</p>
+                        </div>
+                    </button>
                     <button
                         onClick={() => setActiveTab("Settings")}
                         className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${activeTab === "Settings"
@@ -757,18 +782,66 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                         >
                             <CheckSquare className="w-3.5 h-3.5" /> {isSelectionMode ? 'Cancel Selection' : 'Select'}
                         </Button>
-                        {activeTab !== "Recycle Bin" && (
-                            <Button onClick={() => setIsAddDialogOpen(true)} className="h-9 bg-[#f59e0b] hover:bg-[#d97706] text-black rounded-lg gap-2 font-bold px-5 ml-2 border-none">
-                                <Plus className="w-4 h-4" /> Add
-                            </Button>
-                        )}
+                        <Button onClick={() => setIsAddDialogOpen(true)} className="h-9 bg-[#f59e0b] hover:bg-[#d97706] text-black rounded-lg gap-2 font-bold px-5 ml-2 border-none">
+                            <Plus className="w-4 h-4" /> Add
+                        </Button>
                     </div>
                 </header>
 
                 {/* Content Area */}
                 <div className="flex-1 flex flex-col overflow-y-auto">
                     {activeTab === "Settings" ? (
-                        <SettingsPage theme={theme} onThemeChange={setTheme} onSignOut={onSignOut} />
+                        <SettingsPage theme={theme} onThemeChange={setTheme} />
+                    ) : activeTab === "Main" ? (
+                        <div className="flex-1 flex flex-col p-8 space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <div className="space-y-4">
+                                <h1 className="text-4xl font-black tracking-tight text-slate-900 dark:text-white">
+                                    Welcome back, <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">{user.name}</span>!
+                                </h1>
+                                <p className="text-slate-500 dark:text-slate-400 text-lg font-medium max-w-2xl">
+                                    Here's what's happening with your resources today. Your private digital library is growing.
+                                </p>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                {[
+                                    { label: "Total Resources", value: resources.length, icon: LayoutGrid, color: "text-blue-500", bg: "bg-blue-500/10" },
+                                    { label: "Links Saved", value: resources.filter(r => r.type === 'Link').length, icon: LinkIcon, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+                                    { label: "Notes Written", value: resources.filter(r => r.type === 'Note').length, icon: FileText, color: "text-amber-500", bg: "bg-amber-500/10" },
+                                    { label: "Favorites", value: resources.filter(r => r.isFavorite).length, icon: Star, color: "text-rose-500", bg: "bg-rose-500/10" },
+                                ].map((stat, i) => (
+                                    <div key={i} className="p-6 rounded-3xl bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 shadow-sm transition-all hover:shadow-xl group">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div className={`p-3 rounded-2xl ${stat.bg} ${stat.color}`}>
+                                                <stat.icon className="w-6 h-6" />
+                                            </div>
+                                            <span className="text-3xl font-black text-slate-900 dark:text-white">{stat.value}</span>
+                                        </div>
+                                        <p className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">{stat.label}</p>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="space-y-6">
+                                <div className="flex items-center justify-between">
+                                    <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Recent Activity</h2>
+                                    <Button variant="ghost" className="text-blue-600 font-bold hover:bg-blue-50" onClick={() => setActiveTab("All Resources")}>View All</Button>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {resources.filter(r => !r.isDeleted).slice(0, 3).map(resource => (
+                                        <Card key={resource.id} className="bg-white dark:bg-[#0f172a] border-slate-200 dark:border-slate-800 hover:shadow-lg transition-all cursor-pointer overflow-hidden group" onClick={() => setSelectedResource(resource)}>
+                                            <div className="h-2 w-full" style={{ backgroundColor: categories.find(c => c.name === (resource.tags?.[0]))?.color || '#3b82f6' }} />
+                                            <CardHeader className="p-5">
+                                                <CardTitle className="text-base font-bold line-clamp-1">{resource.title}</CardTitle>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mt-2">{resource.description || 'No description provided.'}</p>
+                                            </CardHeader>
+                                        </Card>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    ) : activeTab === "Profile" ? (
+                        <ProfilePage user={user} onSignOut={onSignOut} />
                     ) : selectedResource ? (
                         <div className="flex-1 p-6 h-full overflow-hidden">
                             <ResourceDetailView
