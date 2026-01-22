@@ -22,7 +22,7 @@ export default function ResourceDetailView({ resource, onBack, onEdit, onFavorit
     };
 
     return (
-        <div className="flex flex-col h-full bg-white dark:bg-[#020617] rounded-3xl border border-slate-200 dark:border-slate-800/60 shadow-2xl animate-in fade-in slide-in-from-bottom-6 duration-500 overflow-hidden transition-colors duration-300">
+        <div className="flex flex-col h-full bg-white dark:bg-[#020617] animate-in fade-in slide-in-from-bottom-6 duration-500 overflow-hidden transition-colors duration-300">
             {/* Top Navigation Bar */}
             <div className="px-6 h-16 flex items-center justify-between border-b border-slate-200 dark:border-slate-800/40 bg-white/40 dark:bg-[#020617]/40 backdrop-blur-2xl z-20 shrink-0">
                 <Button

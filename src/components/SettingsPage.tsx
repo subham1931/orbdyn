@@ -25,7 +25,7 @@ export default function SettingsPage({ theme, onThemeChange }: { theme: "light" 
     ];
 
     return (
-        <div className="flex-1 w-full max-w-5xl mx-auto p-4 md:p-8 space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="flex-1 w-full p-8 space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* Page Header */}
             <div className="space-y-1">
                 <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Settings</h1>

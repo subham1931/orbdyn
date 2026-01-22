@@ -9,7 +9,7 @@ interface ProfilePageProps {
 
 export default function ProfilePage({ user, onSignOut }: ProfilePageProps) {
     return (
-        <div className="flex-1 flex flex-col p-8 space-y-10 animate-in fade-in slide-in-from-right-4 duration-500 max-w-4xl mx-auto w-full">
+        <div className="flex-1 flex flex-col p-8 space-y-10 animate-in fade-in slide-in-from-right-4 duration-500 w-full">
             <div className="text-center space-y-4">
                 <div className="relative inline-block">
                     <div className="w-32 h-32 rounded-[2.5rem] border-4 border-white dark:border-slate-800 shadow-2xl overflow-hidden mx-auto">

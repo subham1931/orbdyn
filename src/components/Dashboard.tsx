@@ -9,6 +9,7 @@ import {
     CheckSquare,
     Star,
     Archive,
+    Calendar,
     Plus,
     Search,
     Filter,
@@ -26,7 +27,6 @@ import {
     Eye,
     Share2,
     Home,
-    User,
     RotateCcw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -468,7 +468,6 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
         { name: "Favorites", icon: Star },
         { name: "Archive", icon: Archive },
         { name: "Recycle Bin", icon: Trash2 },
-        { name: "Profile", icon: User },
     ];
 
     return (
@@ -829,12 +828,30 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {resources.filter(r => !r.isDeleted).slice(0, 3).map(resource => (
-                                        <Card key={resource.id} className="bg-white dark:bg-[#0f172a] border-slate-200 dark:border-slate-800 hover:shadow-lg transition-all cursor-pointer overflow-hidden group" onClick={() => setSelectedResource(resource)}>
-                                            <div className="h-2 w-full" style={{ backgroundColor: categories.find(c => c.name === (resource.tags?.[0]))?.color || '#3b82f6' }} />
-                                            <CardHeader className="p-5">
-                                                <CardTitle className="text-base font-bold line-clamp-1">{resource.title}</CardTitle>
-                                                <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mt-2">{resource.description || 'No description provided.'}</p>
+                                        <Card
+                                            key={resource.id}
+                                            className="bg-white dark:bg-[#0f172a] border-slate-200 dark:border-slate-800 transition-all duration-300 shadow-sm hover:shadow-xl hover:shadow-blue-500/10 dark:hover:shadow-none hover:-translate-y-1 cursor-pointer overflow-hidden group rounded-[1.75rem] border-none ring-1 ring-slate-200 dark:ring-slate-800"
+                                            onClick={() => setSelectedResource(resource)}
+                                        >
+                                            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-500/5 to-transparent blur-2xl -mr-12 -mt-12 group-hover:from-blue-500/10 transition-colors" />
+                                            <CardHeader className="p-5 pb-1">
+                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 ${resource.type === 'Link' ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 shadow-lg shadow-blue-500/5' :
+                                                    resource.type === 'Note' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shadow-lg shadow-emerald-500/5' :
+                                                        'bg-purple-500/10 text-purple-600 dark:text-purple-400 shadow-lg shadow-purple-500/5'
+                                                    }`}>
+                                                    {resource.type === 'Link' && <LinkIcon className="w-5 h-5" />}
+                                                    {resource.type === 'Note' && <FileText className="w-5 h-5" />}
+                                                    {resource.type === 'To Do' && <CheckSquare className="w-5 h-5" />}
+                                                </div>
+                                                <CardTitle className="text-lg font-bold text-slate-900 dark:text-white line-clamp-1">{resource.title}</CardTitle>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mt-1.5 font-medium leading-relaxed">{resource.description || 'Securely archived in your vault.'}</p>
                                             </CardHeader>
+                                            <CardFooter className="px-5 py-3 flex justify-between items-center bg-slate-50/50 dark:bg-[#020617]/40 mt-2 border-t border-slate-100 dark:border-slate-800/50">
+                                                <Badge className="bg-slate-200/50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 border-none px-2.5 py-0.5 font-bold text-[9px] uppercase tracking-widest rounded-md">
+                                                    {resource.tags?.[0] || 'Unsorted'}
+                                                </Badge>
+                                                <span className="text-[9px] font-black text-slate-400 dark:text-slate-600 uppercase tracking-widest">{new Date(resource.createdAt).toLocaleDateString()}</span>
+                                            </CardFooter>
                                         </Card>
                                     ))}
                                 </div>
@@ -843,7 +860,7 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                     ) : activeTab === "Profile" ? (
                         <ProfilePage user={user} onSignOut={onSignOut} />
                     ) : selectedResource ? (
-                        <div className="flex-1 p-6 h-full overflow-hidden">
+                        <div className="flex-1 h-full overflow-hidden">
                             <ResourceDetailView
                                 resource={selectedResource}
                                 onBack={() => setSelectedResource(null)}
@@ -862,135 +879,138 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                                         <Card
                                             key={resource.id}
                                             onClick={() => isSelectionMode ? toggleSelection(resource.id) : setSelectedResource(resource)}
-                                            className={`group relative bg-white dark:bg-[#0f172a] border-slate-200 dark:border-slate-800 transition-all duration-300 shadow-sm hover:shadow-xl hover:shadow-blue-500/5 dark:hover:shadow-none hover:-translate-y-1 overflow-hidden cursor-pointer ${selectedResourceIds.has(resource.id)
-                                                ? 'ring-2 ring-blue-500 border-blue-500/50 bg-blue-50/10 dark:bg-blue-500/5'
-                                                : 'hover:border-blue-500/50 dark:hover:border-slate-700'
+                                            className={`group relative bg-white dark:bg-[#0f172a] transition-all duration-300 shadow-sm hover:shadow-xl hover:shadow-blue-500/10 dark:hover:shadow-none hover:-translate-y-1 overflow-hidden cursor-pointer rounded-[1.75rem] border-none ring-1 ring-slate-200 dark:ring-slate-800 ${selectedResourceIds.has(resource.id)
+                                                ? 'ring-2 ring-blue-500 bg-blue-50/10 dark:bg-blue-500/5 shadow-xl shadow-blue-500/20'
+                                                : ''
                                                 }`}
                                         >
+                                            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/5 to-transparent blur-3xl -mr-16 -mt-16 group-hover:from-blue-500/10 transition-colors duration-1000" />
+
                                             {isSelectionMode && (
-                                                <div className="absolute top-4 left-4 z-20">
-                                                    <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${selectedResourceIds.has(resource.id)
-                                                        ? 'bg-blue-500 border-blue-500 text-white'
-                                                        : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700'
+                                                <div className="absolute top-6 left-6 z-20">
+                                                    <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-300 ${selectedResourceIds.has(resource.id)
+                                                        ? 'bg-blue-600 border-blue-600 text-white scale-110 shadow-lg shadow-blue-500/50'
+                                                        : 'bg-white/80 dark:bg-slate-900/80 border-slate-300 dark:border-slate-700'
                                                         }`}>
-                                                        {selectedResourceIds.has(resource.id) && <CheckSquare className="w-3.5 h-3.5" />}
+                                                        {selectedResourceIds.has(resource.id) && <CheckSquare className="w-4 h-4" />}
                                                     </div>
                                                 </div>
                                             )}
-                                            <CardHeader className="pb-3 relative">
+
+                                            <CardHeader className="p-6 pb-2 relative">
                                                 {activeTab === "Recycle Bin" ? (
-                                                    <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                                    <div className="absolute top-6 right-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-20">
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 handleRestoreResource(resource.id);
                                                             }}
-                                                            className="p-2 hover:bg-emerald-500/10 rounded-lg text-emerald-500 transition-colors"
+                                                            className="p-3 bg-white dark:bg-slate-800 hover:bg-emerald-500 hover:text-white rounded-2xl text-emerald-500 shadow-xl border border-slate-100 dark:border-slate-700 transition-all active:scale-95"
                                                             title="Restore"
                                                         >
-                                                            <RotateCcw className="w-4 h-4" />
+                                                            <RotateCcw className="w-4 h-4 font-black" />
                                                         </button>
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 setResourceToDelete(resource);
                                                             }}
-                                                            className="p-2 hover:bg-red-500/10 rounded-lg text-red-500 transition-colors"
+                                                            className="p-3 bg-white dark:bg-slate-800 hover:bg-red-500 hover:text-white rounded-2xl text-red-500 shadow-xl border border-slate-100 dark:border-slate-700 transition-all active:scale-95"
                                                             title="Delete Permanently"
                                                         >
                                                             <Trash2 className="w-4 h-4" />
                                                         </button>
                                                     </div>
                                                 ) : (
-                                                    <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                                    <div className="absolute top-6 right-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-20">
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 toggleFavorite(resource.id);
                                                             }}
-                                                            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-yellow-400 transition-colors"
+                                                            className={`p-3 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 transition-all active:scale-95 ${resource.isFavorite ? "text-yellow-500" : "text-slate-400 hover:text-yellow-500"}`}
                                                         >
-                                                            <Star className={`w-4 h-4 ${resource.isFavorite ? "fill-yellow-400 text-yellow-400" : ""}`} />
+                                                            <Star className={`w-4 h-4 ${resource.isFavorite ? "fill-yellow-500" : ""}`} />
                                                         </button>
                                                         <DropdownMenu>
                                                             <DropdownMenuTrigger asChild>
                                                                 <button
                                                                     onClick={(e) => e.stopPropagation()}
-                                                                    className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+                                                                    className="p-3 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 text-slate-400 hover:text-slate-900 dark:hover:text-white shadow-xl transition-all active:scale-95"
                                                                 >
                                                                     <MoreHorizontal className="w-4 h-4" />
                                                                 </button>
                                                             </DropdownMenuTrigger>
-                                                            <DropdownMenuContent align="end" className="w-48 bg-white dark:bg-[#0f172a] border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-200 shadow-xl dark:shadow-black/50 p-1.5 transition-colors">
-                                                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setSelectedResource(resource); }} className="group hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-slate-100 dark:focus:bg-slate-800 focus:text-slate-900 dark:focus:text-white cursor-pointer gap-2.5 text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-600 dark:text-slate-300">
-                                                                    <Eye className="w-3.5 h-3.5 text-slate-400 group-focus:text-slate-900 dark:group-focus:text-white transition-colors" /> View Details
+                                                            <DropdownMenuContent align="end" className="w-56 bg-white/80 dark:bg-[#0f172a]/90 backdrop-blur-xl border-slate-200/50 dark:border-slate-800/50 text-slate-900 dark:text-slate-200 shadow-2xl p-2 rounded-2xl">
+                                                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setSelectedResource(resource); }} className="group hover:bg-blue-600 hover:text-white focus:bg-blue-600 focus:text-white cursor-pointer gap-3 text-xs font-bold px-3 py-2.5 rounded-xl transition-all">
+                                                                    <Eye className="w-4 h-4 opacity-50 group-hover:opacity-100" /> View Resource
                                                                 </DropdownMenuItem>
-                                                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditResource(resource); }} className="group hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-slate-100 dark:focus:bg-slate-800 focus:text-slate-900 dark:focus:text-white cursor-pointer gap-2.5 text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-600 dark:text-slate-300">
-                                                                    <Pencil className="w-3.5 h-3.5 text-slate-400 group-focus:text-slate-900 dark:group-focus:text-white transition-colors" /> Edit Resource
+                                                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditResource(resource); }} className="group hover:bg-blue-600 hover:text-white focus:bg-blue-600 focus:text-white cursor-pointer gap-3 text-xs font-bold px-3 py-2.5 rounded-xl transition-all">
+                                                                    <Pencil className="w-4 h-4 opacity-50 group-hover:opacity-100" /> Edit Metadata
                                                                 </DropdownMenuItem>
-                                                                <div className="h-px bg-slate-100 dark:bg-slate-800 my-1.5 mx-1" />
+                                                                <div className="h-px bg-slate-100 dark:bg-slate-800/50 my-1.5 mx-1" />
                                                                 <DropdownMenuSub>
-                                                                    <DropdownMenuSubTrigger className="hover:bg-blue-600 focus:bg-blue-600 data-[state=open]:bg-blue-600 hover:text-white focus:text-white data-[state=open]:text-white cursor-pointer gap-2.5 text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-300">
-                                                                        <Download className="w-3.5 h-3.5 transition-colors" /> Export
+                                                                    <DropdownMenuSubTrigger className="hover:bg-blue-600 focus:bg-blue-600 data-[state=open]:bg-blue-600 hover:text-white focus:text-white data-[state=open]:text-white cursor-pointer gap-3 text-xs font-bold px-3 py-2.5 rounded-xl transition-colors">
+                                                                        <Download className="w-4 h-4 opacity-50 group-data-[state=open]:opacity-100 transition-colors" /> Export
                                                                     </DropdownMenuSubTrigger>
                                                                     <DropdownMenuPortal>
-                                                                        <DropdownMenuSubContent className="bg-white dark:bg-[#0f172a] border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-200 shadow-xl p-1.5 min-w-[140px] transition-colors">
-                                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleExportResource(resource, 'json'); }} className="hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-slate-100 dark:focus:bg-slate-800 cursor-pointer text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-600 dark:text-slate-300">
+                                                                        <DropdownMenuSubContent className="bg-white dark:bg-[#0f172a] border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-200 shadow-xl p-2 rounded-2xl min-w-[160px]">
+                                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleExportResource(resource, 'json'); }} className="hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-slate-100 dark:focus:bg-slate-800 cursor-pointer text-xs font-bold px-3 py-2.5 rounded-xl transition-colors text-slate-600 dark:text-slate-300">
                                                                                 As JSON
                                                                             </DropdownMenuItem>
-                                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleExportResource(resource, 'md'); }} className="hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-slate-100 dark:focus:bg-slate-800 cursor-pointer text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-600 dark:text-slate-300">
+                                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleExportResource(resource, 'md'); }} className="hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-slate-100 dark:focus:bg-slate-800 cursor-pointer text-xs font-bold px-3 py-2.5 rounded-xl transition-colors text-slate-600 dark:text-slate-300">
                                                                                 As Markdown
                                                                             </DropdownMenuItem>
-                                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleExportResource(resource, 'pdf'); }} className="bg-blue-600 hover:bg-blue-700 focus:bg-blue-700 text-white cursor-pointer text-xs font-bold px-2.5 py-2 rounded-md transition-colors">
+                                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleExportResource(resource, 'pdf'); }} className="bg-blue-600 hover:bg-blue-700 focus:bg-blue-700 text-white cursor-pointer text-xs font-black px-3 py-2.5 rounded-xl transition-colors">
                                                                                 As PDF
                                                                             </DropdownMenuItem>
                                                                         </DropdownMenuSubContent>
                                                                     </DropdownMenuPortal>
                                                                 </DropdownMenuSub>
-                                                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleShareResource(resource); }} className="group hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-slate-100 dark:focus:bg-slate-800 focus:text-slate-900 dark:focus:text-white cursor-pointer gap-2.5 text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-600 dark:text-slate-300">
-                                                                    <Share2 className="w-3.5 h-3.5 text-slate-400 group-focus:text-slate-900 dark:group-focus:text-white transition-colors" /> Share
+                                                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleShareResource(resource); }} className="group hover:bg-blue-600 hover:text-white focus:bg-blue-600 focus:text-white cursor-pointer gap-3 text-xs font-bold px-3 py-2.5 rounded-xl transition-all">
+                                                                    <Share2 className="w-4 h-4 opacity-50 group-hover:opacity-100" /> Share
                                                                 </DropdownMenuItem>
-                                                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleArchiveResource(resource.id); }} className="group hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-slate-100 dark:focus:bg-slate-800 focus:text-slate-900 dark:focus:text-white cursor-pointer gap-2.5 text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-600 dark:text-slate-300">
-                                                                    <Archive className="w-3.5 h-3.5 text-slate-400 group-focus:text-slate-900 dark:group-focus:text-white transition-colors" /> {resource.isArchived ? "Unarchive" : "Archive"}
+                                                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleArchiveResource(resource.id); }} className="group hover:bg-blue-600 hover:text-white focus:bg-blue-600 focus:text-white cursor-pointer gap-3 text-xs font-bold px-3 py-2.5 rounded-xl transition-all">
+                                                                    <Archive className="w-4 h-4 opacity-50 group-hover:opacity-100" /> {resource.isArchived ? "Unarchive" : "Archive"}
                                                                 </DropdownMenuItem>
-                                                                <div className="h-px bg-slate-100 dark:bg-slate-800 my-1.5 mx-1" />
-                                                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDeleteResource(resource); }} className="group hover:bg-red-500/10 focus:bg-red-500/10 text-red-400 focus:text-red-400 cursor-pointer gap-2.5 text-xs font-medium px-2.5 py-2 rounded-md transition-colors">
-                                                                    <Trash2 className="w-3.5 h-3.5 group-focus:text-red-400 transition-colors" /> Delete
+                                                                <div className="h-px bg-slate-100 dark:bg-slate-800/50 my-1.5 mx-1" />
+                                                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDeleteResource(resource); }} className="group hover:bg-red-500 focus:bg-red-500 hover:text-white focus:text-white text-red-500 cursor-pointer gap-3 text-xs font-bold px-3 py-2.5 rounded-xl transition-all">
+                                                                    <Trash2 className="w-4 h-4 opacity-50 group-hover:opacity-100" /> Delete Vault Item
                                                                 </DropdownMenuItem>
                                                             </DropdownMenuContent>
                                                         </DropdownMenu>
                                                     </div>
                                                 )}
 
-                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${resource.type === 'Link' ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400' :
-                                                    resource.type === 'Note' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' :
-                                                        'bg-purple-500/10 text-purple-600 dark:text-purple-400'
+                                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-500 shadow-xl group-hover:scale-110 group-hover:rotate-3 ${resource.type === 'Link' ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 shadow-blue-500/5' :
+                                                    resource.type === 'Note' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shadow-emerald-500/5' :
+                                                        'bg-purple-500/10 text-purple-600 dark:text-purple-400 shadow-purple-500/5'
                                                     }`}>
-                                                    {resource.type === 'Link' && <LinkIcon className="w-5 h-5" />}
-                                                    {resource.type === 'Note' && <FileText className="w-5 h-5" />}
-                                                    {resource.type === 'To Do' && <CheckSquare className="w-5 h-5" />}
+                                                    {resource.type === 'Link' && <LinkIcon className="w-6 h-6" />}
+                                                    {resource.type === 'Note' && <FileText className="w-6 h-6" />}
+                                                    {resource.type === 'To Do' && <CheckSquare className="w-6 h-6" />}
                                                 </div>
-                                                <CardTitle className="text-lg font-bold text-slate-900 dark:text-white pt-4 line-clamp-1 border-none">{resource.title}</CardTitle>
+                                                <CardTitle className="text-xl font-black text-slate-900 dark:text-white pt-4 line-clamp-1 border-none tracking-tight">{resource.title}</CardTitle>
                                             </CardHeader>
 
-                                            <CardContent className="pb-4">
-                                                <p className="text-slate-600 dark:text-slate-400 text-sm line-clamp-3 leading-relaxed">
-                                                    {resource.content}
+                                            <CardContent className="px-6 pb-4">
+                                                <p className="text-slate-500 dark:text-slate-400 text-sm line-clamp-2 leading-relaxed font-medium">
+                                                    {resource.description || resource.content}
                                                 </p>
                                             </CardContent>
 
-                                            <CardFooter className="pt-4 border-t border-slate-100 dark:border-slate-800/50 flex justify-between items-center bg-slate-50/50 dark:bg-[#020617]/20">
+                                            <CardFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800/80 flex justify-between items-center bg-slate-50/50 dark:bg-[#021024]/30 backdrop-blur-sm self-end w-full mt-auto">
                                                 <div className="flex gap-2 flex-wrap">
-                                                    {resource.tags?.map(tag => {
+                                                    {(resource.tags?.length ? resource.tags : ['Unsorted']).slice(0, 1).map(tag => {
                                                         const category = categories.find(c => c.name === tag);
                                                         return (
                                                             <Badge
                                                                 key={tag}
-                                                                variant="secondary"
-                                                                className={`border-none rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider transition-colors ${!category ? 'bg-slate-100 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700' : ''}`}
+                                                                className={`border-none rounded-lg px-3 py-1 text-[9px] font-black uppercase tracking-[0.1em] transition-all duration-300 shadow-sm ${!category ? 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400' : ''}`}
                                                                 style={category ? {
-                                                                    backgroundColor: `${category.color}26`, // ~15% opacity
-                                                                    color: category.color
+                                                                    backgroundColor: `${category.color}15`,
+                                                                    color: category.color,
+                                                                    boxShadow: `0 4px 12px ${category.color}10`
                                                                 } : undefined}
                                                             >
                                                                 {tag}
@@ -998,9 +1018,12 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                                                         );
                                                     })}
                                                 </div>
-                                                <span className="text-xs font-semibold text-slate-500 dark:text-slate-500">
-                                                    {new Date(resource.createdAt).toLocaleDateString()}
-                                                </span>
+                                                <div className="flex items-center gap-1.5">
+                                                    <Calendar className="w-3 h-3 text-slate-400" />
+                                                    <span className="text-[9px] font-black text-slate-400 dark:text-slate-600 uppercase tracking-widest">
+                                                        {new Date(resource.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                                    </span>
+                                                </div>
                                             </CardFooter>
                                         </Card>
                                     ))}
