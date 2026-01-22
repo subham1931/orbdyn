@@ -121,7 +121,7 @@ export default function AddResourceDialog({ isOpen, onClose, onAdd, categories, 
                     </DialogTitle>
                 </DialogHeader>
 
-                <div className="p-6 space-y-6 overflow-y-auto flex-1">
+                <div className="p-6 space-y-6 overflow-y-auto flex-1 no-scrollbar">
                     <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ResourceType)} className="w-full">
                         <TabsList className="grid w-full grid-cols-3 bg-slate-100 dark:bg-[#1e293b]/50 p-1 h-12 rounded-xl">
                             <TabsTrigger value="Link" className="gap-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg h-10 rounded-lg transition-all text-slate-500 dark:text-slate-400">
@@ -223,7 +223,7 @@ export default function AddResourceDialog({ isOpen, onClose, onAdd, categories, 
                                                     type="time"
                                                     value={dueTime}
                                                     onChange={(e) => setDueTime(e.target.value)}
-                                                    className="bg-[#1e293b]/50 border-slate-700 focus:border-blue-500 text-slate-200 h-11 rounded-xl [color-scheme:dark]"
+                                                    className="bg-slate-50 dark:bg-[#1e293b]/50 border-slate-200 dark:border-slate-700 focus:border-blue-500 text-slate-900 dark:text-slate-200 h-11 rounded-xl dark:[color-scheme:dark] transition-colors"
                                                 />
                                             </div>
                                             <div className="space-y-2">
@@ -284,7 +284,7 @@ export default function AddResourceDialog({ isOpen, onClose, onAdd, categories, 
                                                         const file = e.target.files?.[0];
                                                         if (file) setImages([...images, file.name]);
                                                     }}
-                                                    className="pl-10 bg-[#1e293b]/50 border-slate-700 focus:border-blue-500 text-slate-200 h-11 rounded-xl file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-500/10 file:text-blue-400 hover:file:bg-blue-500/20"
+                                                    className="pl-10 bg-slate-50 dark:bg-[#1e293b]/50 border-slate-200 dark:border-slate-700 focus:border-blue-500 text-slate-900 dark:text-slate-200 h-11 rounded-xl file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-600/10 dark:file:bg-blue-500/10 file:text-blue-600 dark:file:text-blue-400 hover:file:bg-blue-600/20 dark:hover:file:bg-blue-500/20 transition-colors"
                                                 />
                                                 <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-hover:text-blue-400 transition-colors" />
                                             </div>
@@ -309,7 +309,7 @@ export default function AddResourceDialog({ isOpen, onClose, onAdd, categories, 
                                                         const file = e.target.files?.[0];
                                                         if (file) setDocuments([...documents, file.name]);
                                                     }}
-                                                    className="pl-10 bg-[#1e293b]/50 border-slate-700 focus:border-blue-500 text-slate-200 h-11 rounded-xl file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-500/10 file:text-blue-400 hover:file:bg-blue-500/20"
+                                                    className="pl-10 bg-slate-50 dark:bg-[#1e293b]/50 border-slate-200 dark:border-slate-700 focus:border-blue-500 text-slate-900 dark:text-slate-200 h-11 rounded-xl file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-600/10 dark:file:bg-blue-500/10 file:text-blue-600 dark:file:text-blue-400 hover:file:bg-blue-600/20 dark:hover:file:bg-blue-500/20 transition-colors"
                                                 />
                                                 <Paperclip className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-hover:text-blue-400 transition-colors" />
                                             </div>
@@ -336,7 +336,7 @@ export default function AddResourceDialog({ isOpen, onClose, onAdd, categories, 
                                         <DropdownMenuTrigger asChild>
                                             <Button
                                                 variant="outline"
-                                                className="w-full justify-between h-11 rounded-xl bg-[#1e293b]/50 border-slate-700 text-slate-300 font-medium hover:bg-[#1e293b]/50 hover:text-slate-300"
+                                                className="w-full justify-between h-11 rounded-xl bg-slate-50 dark:bg-[#1e293b]/50 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-medium hover:bg-slate-100 dark:hover:bg-[#1e293b]/50 hover:text-slate-900 dark:hover:text-white transition-colors"
                                             >
                                                 <span className="flex items-center gap-2">
                                                     <Folder className="w-4 h-4 text-slate-500" />
@@ -356,9 +356,9 @@ export default function AddResourceDialog({ isOpen, onClose, onAdd, categories, 
                                                 <DropdownMenuItem
                                                     key={cat.id}
                                                     onClick={() => setCategory(cat.name)}
-                                                    className="text-slate-300 focus:text-white focus:bg-slate-800 gap-3 rounded-lg py-2 cursor-pointer"
+                                                    className="text-slate-600 dark:text-slate-300 focus:text-slate-900 dark:focus:text-white focus:bg-slate-100 dark:focus:bg-slate-800 gap-3 rounded-lg py-2 cursor-pointer transition-colors"
                                                 >
-                                                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: cat.color }} />
+                                                    <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: cat.color }} />
                                                     {cat.name}
                                                 </DropdownMenuItem>
                                             ))}
@@ -373,7 +373,7 @@ export default function AddResourceDialog({ isOpen, onClose, onAdd, categories, 
                                         placeholder="Add tags (comma, separated)"
                                         value={tags}
                                         onChange={(e) => setTags(e.target.value)}
-                                        className="bg-[#1e293b]/50 border-slate-700 focus:border-blue-500 text-slate-200 h-11 rounded-xl"
+                                        className="bg-slate-50 dark:bg-[#1e293b]/50 border-slate-200 dark:border-slate-700 focus:border-blue-500 text-slate-900 dark:text-slate-200 h-11 rounded-xl transition-colors"
                                     />
                                 </div>
                             </div>

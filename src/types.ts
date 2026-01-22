@@ -9,6 +9,8 @@ export interface Resource {
     tags?: string[];
     isFavorite?: boolean;
     isArchived?: boolean;
+    isDeleted?: boolean;
+    deletedAt?: number;
     url?: string;
     description?: string;
     images?: string[];
