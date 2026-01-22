@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link as LinkIcon, FileText, CheckSquare, Calendar, Tag, ExternalLink, ChevronLeft, Image as ImageIcon, Paperclip, Pencil, Star, Share2, Download } from "lucide-react";
 import type { Resource, Category } from "@/types";
 
@@ -23,260 +24,217 @@ export default function ResourceDetailView({ resource, onBack, onEdit, onFavorit
 
     return (
         <div className="flex flex-col h-full bg-white dark:bg-[#020617] animate-in fade-in slide-in-from-bottom-6 duration-500 overflow-hidden transition-colors duration-300">
-            {/* Top Navigation Bar */}
-            <div className="px-6 h-16 flex items-center justify-between border-b border-slate-200 dark:border-slate-800/40 bg-white/40 dark:bg-[#020617]/40 backdrop-blur-2xl z-20 shrink-0">
-                <Button
-                    variant="ghost"
-                    onClick={onBack}
-                    className="pl-2 pr-4 h-8 hover:bg-slate-100 dark:hover:bg-white/5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all rounded-lg group border border-transparent hover:border-slate-200 dark:hover:border-slate-800"
-                >
-                    <ChevronLeft className="w-3.5 h-3.5 mr-1.5 group-hover:-translate-x-1 transition-transform" />
-                    <span className="text-[10px] font-bold tracking-wider uppercase">Return</span>
-                </Button>
+            {/* Header (shadcn-style card) */}
+            <div className="shrink-0 border-b border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-[#020617]/40 backdrop-blur-xl">
+                <div className="px-6 py-4">
+                    <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-start gap-3 min-w-0">
+                            <Button variant="ghost" size="icon" onClick={onBack} className="h-9 w-9 rounded-lg">
+                                <ChevronLeft className="w-5 h-5" />
+                            </Button>
 
-                <div className="flex items-center gap-2">
-                    <div className="flex bg-slate-100 dark:bg-slate-900/50 p-0.5 rounded-lg border border-slate-200 dark:border-slate-800 transition-colors">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => onFavorite(resource.id)}
-                            className={`h-7 w-7 rounded-md transition-all ${resource.isFavorite
-                                ? "bg-yellow-500 text-black hover:bg-yellow-400"
-                                : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-white/5"}`}
-                        >
-                            <Star className={`w-3 h-3 ${resource.isFavorite ? "fill-current" : ""}`} />
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => onShare(resource)}
-                            className="h-7 w-7 rounded-md text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-white/5 transition-all"
-                        >
-                            <Share2 className="w-3 h-3" />
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => onEdit(resource)}
-                            className="h-7 w-7 rounded-md text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-blue-500/10 dark:hover:bg-blue-500/20 transition-all"
-                        >
-                            <Pencil className="w-3 h-3" />
-                        </Button>
+                            <div className="min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <Badge className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded border-0 ${resource.type === 'Link' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : resource.type === 'Note' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300' : 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'}`}>
+                                        {resource.type}
+                                    </Badge>
+                                    <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-medium">
+                                        <Calendar className="w-3.5 h-3.5" />
+                                        {new Date(resource.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                    </div>
+                                </div>
+                                <div className="mt-1 text-xl md:text-2xl font-semibold text-slate-900 dark:text-white tracking-tight truncate">
+                                    {resource.title}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                            <Button variant="outline" size="sm" onClick={() => onEdit(resource)} className="h-9 rounded-lg">
+                                <Pencil className="w-4 h-4 mr-2" />
+                                Edit
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => onShare(resource)} className="h-9 rounded-lg">
+                                <Share2 className="w-4 h-4 mr-2" />
+                                Share
+                            </Button>
+                            <Button
+                                variant={resource.isFavorite ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => onFavorite(resource.id)}
+                                className={`h-9 rounded-lg ${resource.isFavorite ? "bg-yellow-500 hover:bg-yellow-400 text-black border-none" : ""}`}
+                            >
+                                <Star className={`w-4 h-4 mr-2 ${resource.isFavorite ? "fill-current" : ""}`} />
+                                Favorite
+                            </Button>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {/* Hero Section */}
-            <div className="relative pt-8 pb-6 px-8 shrink-0 overflow-hidden">
-                {/* Background Glow */}
-                <div className={`absolute -top-16 -left-16 w-48 h-48 blur-[80px] opacity-20 rounded-full ${resource.type === 'Link' ? 'bg-blue-500' : resource.type === 'Note' ? 'bg-emerald-500' : 'bg-purple-500'}`} />
+            {/* Main */}
+            <div className="flex-1 overflow-y-auto no-scrollbar">
+                <div className="p-6 w-full">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                        {/* Left sidebar */}
+                        <div className="lg:col-span-4 space-y-6">
+                            <Card className="bg-white dark:bg-[#0f172a] border-slate-200 dark:border-slate-800">
+                                <CardHeader className="pb-3">
+                                    <CardTitle className="text-sm">Details</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div className="text-xs text-slate-500 dark:text-slate-400">ID</div>
+                                        <div className="text-xs font-mono text-slate-700 dark:text-slate-200 truncate">#{resource.id.slice(0, 10)}</div>
+                                    </div>
+                                    <div className="h-px bg-slate-200 dark:bg-slate-800" />
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div className="text-xs text-slate-500 dark:text-slate-400">Created</div>
+                                        <div className="text-xs text-slate-700 dark:text-slate-200">
+                                            {new Date(resource.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                        </div>
+                                    </div>
 
-                <div className="relative z-10 max-w-5xl mx-auto flex flex-col md:flex-row md:items-end gap-5">
-                    {/* Icon Container */}
-                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-xl relative group overflow-hidden ${resource.type === 'Link' ? 'bg-blue-600 shadow-blue-500/10' :
-                        resource.type === 'Note' ? 'bg-emerald-600 shadow-emerald-500/10' :
-                            'bg-purple-600 shadow-purple-500/10'
-                        }`}>
-                        <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        {resource.type === 'Link' && <LinkIcon className="w-7 h-7 text-white" />}
-                        {resource.type === 'Note' && <FileText className="w-7 h-7 text-white" />}
-                        {resource.type === 'To Do' && <CheckSquare className="w-7 h-7 text-white" />}
-                    </div>
+                                    {resource.type === 'To Do' && resource.priority && (
+                                        <>
+                                            <div className="h-px bg-slate-200 dark:bg-slate-800" />
+                                            <div className="flex items-center justify-between gap-3">
+                                                <div className="text-xs text-slate-500 dark:text-slate-400">Priority</div>
+                                                <div className="text-xs font-semibold text-slate-900 dark:text-white">{resource.priority}</div>
+                                            </div>
+                                        </>
+                                    )}
 
-                    <div className="flex-1 space-y-2">
-                        <div className="flex flex-wrap items-center gap-1.5">
-                            <Badge className={`bg-transparent text-[8px] font-bold uppercase tracking-[0.2em] px-2 py-0.5 rounded-full border transition-colors ${resource.type === 'Link' ? 'text-blue-600 dark:text-blue-400 border-blue-500/20 bg-blue-500/5' : resource.type === 'Note' ? 'text-emerald-600 dark:text-emerald-400 border-emerald-500/20 bg-emerald-500/5' : 'text-purple-600 dark:text-purple-400 border-purple-500/20 bg-purple-500/5'}`}>
-                                {resource.type}
-                            </Badge>
-                            <span className="text-slate-300 dark:text-slate-700 font-bold">·</span>
-                            <div className="flex items-center gap-1 px-2.5 py-0.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-full transition-colors">
-                                <Calendar className="w-2.5 h-2.5 text-slate-500" />
-                                <span className="text-slate-600 dark:text-slate-400 text-[8px] font-bold uppercase tracking-wider">
-                                    {new Date(resource.createdAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
-                                </span>
-                            </div>
+                                    {resource.dueDate && (
+                                        <>
+                                            <div className="h-px bg-slate-200 dark:bg-slate-800" />
+                                            <div className="flex items-center justify-between gap-3">
+                                                <div className="text-xs text-slate-500 dark:text-slate-400">Due</div>
+                                                <div className="text-xs text-slate-700 dark:text-slate-200">{resource.dueDate}</div>
+                                            </div>
+                                        </>
+                                    )}
+                                </CardContent>
+                            </Card>
 
                             {resource.tags && resource.tags.length > 0 && (
-                                <>
-                                    <span className="text-slate-300 dark:text-slate-700 font-bold">·</span>
-                                    <div className="flex flex-wrap gap-1.5">
+                                <Card className="bg-white dark:bg-[#0f172a] border-slate-200 dark:border-slate-800">
+                                    <CardHeader className="pb-3">
+                                        <CardTitle className="text-sm">Tags</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="flex flex-wrap gap-2">
                                         {resource.tags.map(tag => {
                                             const color = getCategoryColor(tag);
                                             return (
-                                                <div
+                                                <Badge
                                                     key={tag}
-                                                    className="px-2.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-[0.1em] transition-all hover:-translate-y-0.5 cursor-default ring-1 ring-inset"
+                                                    variant="secondary"
+                                                    className="text-xs font-semibold"
                                                     style={color ? {
-                                                        backgroundColor: `${color}15`,
+                                                        backgroundColor: `${color}12`,
                                                         color: color,
                                                         borderColor: `${color}30`
-                                                    } : {
-                                                        backgroundColor: theme === 'dark' ? 'rgba(30, 41, 59, 0.3)' : 'rgba(241, 245, 249, 1)',
-                                                        color: theme === 'dark' ? '#94a3b8' : '#64748b',
-                                                        borderColor: theme === 'light' ? '#e2e8f0' : 'transparent'
-                                                    }}
+                                                    } : undefined}
                                                 >
                                                     {tag}
-                                                </div>
+                                                </Badge>
                                             );
                                         })}
-                                    </div>
-                                </>
+                                    </CardContent>
+                                </Card>
                             )}
                         </div>
 
-                        <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white tracking-tight leading-tight max-w-4xl">
-                            {resource.title}
-                        </h1>
-                    </div>
-                </div>
-            </div>
+                        {/* Main content */}
+                        <div className="lg:col-span-8 space-y-6">
+                            {(resource.description || resource.content) && (
+                                <Card className="bg-white dark:bg-[#0f172a] border-slate-200 dark:border-slate-800">
+                                    <CardHeader className="pb-3">
+                                        <CardTitle className="text-sm">{resource.description ? "Overview" : "Content"}</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="text-sm md:text-base text-slate-700 dark:text-slate-200 leading-relaxed whitespace-pre-wrap">
+                                        {resource.description || resource.content}
+                                    </CardContent>
+                                </Card>
+                            )}
 
-            {/* Main Content Area */}
-            <div className="flex-1 overflow-y-auto no-scrollbar">
-                <div className="p-6 space-y-8 max-w-5xl mx-auto">
+                            {resource.description && resource.content && resource.content !== resource.description && (
+                                <Card className="bg-white dark:bg-[#0f172a] border-slate-200 dark:border-slate-800">
+                                    <CardHeader className="pb-3">
+                                        <CardTitle className="text-sm">Detailed content</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="font-mono text-sm text-slate-700 dark:text-slate-200 whitespace-pre-wrap leading-relaxed">
+                                        {resource.content}
+                                    </CardContent>
+                                </Card>
+                            )}
 
-                    {/* Meta Info Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {resource.type === 'To Do' && resource.priority && (
-                            <div className="bg-slate-50 dark:bg-[#0f172a]/40 p-4 rounded-2xl border border-slate-200 dark:border-slate-800/60 flex items-center gap-3.5 group hover:border-blue-500/20 dark:hover:border-slate-700 transition-all shadow-sm">
-                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${resource.priority === 'High' ? 'bg-rose-500/10 text-rose-500' : resource.priority === 'Medium' ? 'bg-amber-500/10 text-amber-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
-                                    <Tag className="w-4 h-4" />
-                                </div>
-                                <div className="space-y-0">
-                                    <div className="text-[9px] font-bold text-slate-500 uppercase tracking-widest pl-0.5">Priority</div>
-                                    <div className={`text-md font-bold ${resource.priority === 'High' ? 'text-rose-400' : resource.priority === 'Medium' ? 'text-amber-400' : 'text-emerald-400'}`}>{resource.priority}</div>
-                                </div>
-                            </div>
-                        )}
-                        {resource.dueDate && (
-                            <div className="bg-slate-50 dark:bg-[#0f172a]/40 p-4 rounded-2xl border border-slate-200 dark:border-slate-800/60 flex items-center gap-3.5 group hover:border-blue-500/20 dark:hover:border-slate-700 transition-all shadow-sm">
-                                <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-blue-500/10 text-blue-600 dark:text-blue-400">
-                                    <Calendar className="w-4 h-4" />
-                                </div>
-                                <div className="space-y-0">
-                                    <div className="text-[9px] font-bold text-slate-500 uppercase tracking-widest pl-0.5">Target Date</div>
-                                    <div className="text-md font-bold text-slate-700 dark:text-slate-200 truncate max-w-[150px]">{resource.dueDate}</div>
-                                </div>
-                            </div>
-                        )}
-                        <div className="bg-slate-50 dark:bg-[#0f172a]/40 p-4 rounded-2xl border border-slate-200 dark:border-slate-800/60 flex items-center gap-3.5 group hover:border-blue-500/20 dark:hover:border-slate-700 transition-all shadow-sm">
-                            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-slate-200 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400">
-                                <FileText className="w-4 h-4" />
-                            </div>
-                            <div className="space-y-0 min-w-0">
-                                <div className="text-[9px] font-bold text-slate-500 uppercase tracking-widest pl-0.5">ID Reference</div>
-                                <div className="text-xs font-mono text-slate-500 dark:text-slate-400 uppercase truncate">#{resource.id.slice(0, 10)}</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Content Section */}
-                    <div className="space-y-6">
-                        {(resource.description || resource.content) && (
-                            <div className="relative">
-                                <h4 className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.4em] mb-6 flex items-center gap-6 justify-center">
-                                    <div className="h-px bg-gradient-to-r from-transparent to-slate-200 dark:to-slate-800/80 flex-1"></div>
-                                    {resource.description ? "Overview" : "Content"}
-                                    <div className="h-px bg-gradient-to-l from-transparent to-slate-200 dark:to-slate-800/80 flex-1"></div>
-                                </h4>
-                                <div className="text-slate-600 dark:text-slate-300 text-base md:text-lg leading-relaxed font-medium py-2 px-2 text-center max-w-3xl mx-auto drop-shadow-sm">
-                                    {resource.description || resource.content}
-                                </div>
-                            </div>
-                        )}
-
-                        {resource.description && resource.content && resource.content !== resource.description && (
-                            <div className="mt-6">
-                                <h4 className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3 flex items-center gap-3">
-                                    <div className="h-px bg-slate-200 dark:bg-slate-800 w-8"></div>
-                                    Detailed Content
-                                </h4>
-                                <div className="bg-slate-50 dark:bg-[#0f172a]/80 backdrop-blur-sm p-6 rounded-2xl border border-slate-200 dark:border-slate-800/60 text-slate-700 dark:text-slate-300 font-mono text-sm whitespace-pre-wrap leading-relaxed shadow-inner transition-colors">
-                                    {resource.content}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Resources & Assets */}
-                    <div className="grid grid-cols-1 gap-12 pt-4">
-                        {/* URL Section */}
-                        {resource.url && (
-                            <div className="space-y-4">
-                                <h4 className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-3">
-                                    Primary Resource
-                                    <div className="h-px bg-slate-200 dark:bg-slate-800/60 flex-1"></div>
-                                </h4>
-                                <div className="group relative">
-                                    <div className="absolute -inset-1 bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-blue-600/10 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition duration-700"></div>
-                                    <div className="relative flex flex-col md:flex-row items-center gap-5 p-6 bg-slate-50 dark:bg-[#0f172a]/60 backdrop-blur-sm rounded-3xl border border-slate-200 dark:border-slate-800/60 transition-all duration-500 overflow-hidden group-hover:border-blue-500/30">
-                                        <div className="w-14 h-14 bg-blue-600/10 rounded-2xl flex items-center justify-center shrink-0 border border-blue-500/10 group-hover:scale-110 transition-transform duration-500">
-                                            <ExternalLink className="w-7 h-7 text-blue-600 dark:text-blue-400" />
-                                        </div>
-                                        <div className="flex-1 min-w-0 text-center md:text-left">
-                                            <div className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">Target Destination</div>
+                            {resource.url && (
+                                <Card className="bg-white dark:bg-[#0f172a] border-slate-200 dark:border-slate-800">
+                                    <CardHeader className="pb-3">
+                                        <CardTitle className="text-sm">Link</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="flex flex-col md:flex-row md:items-center gap-4">
+                                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                                            <div className="h-10 w-10 rounded-lg bg-blue-600/10 border border-blue-500/10 flex items-center justify-center shrink-0">
+                                                <ExternalLink className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                            </div>
                                             <a
                                                 href={resource.url}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="text-base text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-bold truncate block decoration-2 underline-offset-4 hover:underline"
+                                                className="min-w-0 truncate text-sm font-semibold text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                                             >
                                                 {resource.url}
                                             </a>
                                         </div>
-                                        <Button
-                                            onClick={() => window.open(resource.url, '_blank')}
-                                            className="w-full md:w-auto px-6 h-12 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-lg shadow-blue-600/10 transition-all hover:-translate-y-0.5 active:scale-95 text-sm tracking-tight"
-                                        >
-                                            Inbound Link
+                                        <Button onClick={() => window.open(resource.url, '_blank')} className="md:ml-auto h-10 rounded-lg">
+                                            Open
                                         </Button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+                                    </CardContent>
+                                </Card>
+                            )}
 
-                        {/* Images Section */}
-                        {resource.images && resource.images.length > 0 && (
-                            <div className="space-y-4">
-                                <h4 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em]">Visual Assets</h4>
-                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                                    {resource.images.map((img, i) => (
-                                        <div key={i} className="group relative aspect-square bg-slate-100 dark:bg-slate-800/40 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-700/50 hover:border-blue-500/50 transition-all">
-                                            <div className="absolute inset-0 bg-blue-500/0 group-hover:bg-blue-500/10 transition-colors z-10" />
-                                            <div className="flex flex-col items-center justify-center gap-3 p-4 h-full text-slate-400 dark:text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-all transform group-hover:scale-105">
-                                                <div className="p-3 bg-white dark:bg-slate-900/50 rounded-2xl shadow-sm dark:shadow-none transition-colors">
-                                                    <ImageIcon className="w-8 h-8 opacity-40 group-hover:opacity-100 transition-opacity" />
+                            {resource.images && resource.images.length > 0 && (
+                                <Card className="bg-white dark:bg-[#0f172a] border-slate-200 dark:border-slate-800">
+                                    <CardHeader className="pb-3">
+                                        <CardTitle className="text-sm">Images</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                            {resource.images.map((img, i) => (
+                                                <div key={i} className="aspect-square rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#0b1120]/60 flex flex-col items-center justify-center gap-2 p-3 text-slate-500 dark:text-slate-400">
+                                                    <ImageIcon className="w-6 h-6 opacity-60" />
+                                                    <div className="text-[10px] font-semibold uppercase tracking-widest truncate max-w-full">{img}</div>
                                                 </div>
-                                                <span className="text-[10px] uppercase font-black tracking-widest truncate max-w-full px-2">{img}</span>
-                                            </div>
+                                            ))}
                                         </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
+                                    </CardContent>
+                                </Card>
+                            )}
 
-                        {/* Documents Section */}
-                        {resource.documents && resource.documents.length > 0 && (
-                            <div className="space-y-4">
-                                <h4 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em]">Attachments</h4>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {resource.documents.map((doc, i) => (
-                                        <div key={i} className="flex items-center gap-5 p-5 bg-slate-50 dark:bg-slate-800/20 rounded-[1.5rem] border border-slate-200 dark:border-slate-800 group hover:bg-slate-100 dark:hover:bg-slate-800/40 hover:border-blue-500/30 dark:hover:border-slate-700 transition-all cursor-pointer">
-                                            <div className="w-12 h-12 bg-white dark:bg-slate-900 rounded-xl flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700/50 group-hover:text-blue-600 dark:group-hover:text-blue-400 shadow-sm transition-colors">
-                                                <Paperclip className="w-5 h-5" />
+                            {resource.documents && resource.documents.length > 0 && (
+                                <Card className="bg-white dark:bg-[#0f172a] border-slate-200 dark:border-slate-800">
+                                    <CardHeader className="pb-3">
+                                        <CardTitle className="text-sm">Attachments</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-3">
+                                        {resource.documents.map((doc, i) => (
+                                            <div key={i} className="flex items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-800 p-4">
+                                                <div className="h-10 w-10 rounded-lg bg-slate-50 dark:bg-[#0b1120]/60 border border-slate-200 dark:border-slate-800 flex items-center justify-center shrink-0 text-slate-500 dark:text-slate-400">
+                                                    <Paperclip className="w-5 h-5" />
+                                                </div>
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">{doc}</div>
+                                                    <div className="text-xs text-slate-500 dark:text-slate-400">File</div>
+                                                </div>
+                                                <Download className="w-4 h-4 text-slate-400 dark:text-slate-600" />
                                             </div>
-                                            <div className="flex-1 min-w-0">
-                                                <div className="text-sm font-bold text-slate-700 dark:text-slate-200 truncate group-hover:text-blue-600 dark:group-hover:text-white transition-colors">{doc}</div>
-                                                <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Document File</div>
-                                            </div>
-                                            <Download className="w-4 h-4 text-slate-400 dark:text-slate-600 group-hover:text-blue-500 dark:group-hover:text-slate-400" />
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
+                                        ))}
+                                    </CardContent>
+                                </Card>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

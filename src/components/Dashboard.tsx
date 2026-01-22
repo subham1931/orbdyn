@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -59,8 +59,13 @@ interface DashboardProps {
 type SortOption = 'custom' | 'title-az' | 'title-za' | 'date-newest' | 'date-oldest' | 'favorites-first' | 'priority-high' | 'type';
 
 export default function Dashboard({ onSignOut }: DashboardProps) {
-    const [activeTab, setActiveTab] = useState("Main");
-    const [user] = useState<{ name: string; email: string; avatar: string }>(() => {
+    const [activeTab, setActiveTab] = useState(() => {
+        const saved = localStorage.getItem("orbdyn_active_tab");
+        // Main tab is disabled for now; fall back to All Resources.
+        if (!saved || saved === "Main") return "All Resources";
+        return saved;
+    });
+    const [user, setUser] = useState<{ name: string; email: string; avatar: string }>(() => {
         const stored = localStorage.getItem("orbdyn_user");
         return stored ? JSON.parse(stored) : {
             name: "Subham",
@@ -77,6 +82,8 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
     const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
     const [editingResource, setEditingResource] = useState<Resource | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const searchRef = useRef<HTMLDivElement>(null);
     const [filterCategory, setFilterCategory] = useState<string>("All");
     const [filterDateFrom, setFilterDateFrom] = useState<string>("");
     const [filterDateTo, setFilterDateTo] = useState<string>("");
@@ -146,24 +153,72 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
     }, [categories]);
 
     useEffect(() => {
+        localStorage.setItem("orbdyn_active_tab", activeTab);
+    }, [activeTab]);
+
+    const switchTab = (tab: string) => {
+        // If a resource details panel is open, close it when navigating to a different tab.
+        setSelectedResource(null);
+        setActiveTab(tab);
+    };
+
+
+    const handleUpdateUser = (updatedUser: { name: string; email: string; avatar: string }) => {
+        setUser(updatedUser);
+        localStorage.setItem("orbdyn_user", JSON.stringify(updatedUser));
+    };
+
+    useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
                 setIsFilterPopoverOpen(false);
             }
+            if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+                setIsSearchOpen(false);
+            }
         }
-        if (isFilterPopoverOpen) {
+        if (isFilterPopoverOpen || isSearchOpen) {
             document.addEventListener("mousedown", handleClickOutside);
         }
         return () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
-    }, [isFilterPopoverOpen]);
+    }, [isFilterPopoverOpen, isSearchOpen]);
+
+    const searchSuggestions = useMemo(() => {
+        const q = searchQuery.trim().toLowerCase();
+        if (!q) return [];
+
+        const matches = resources.filter((r) => {
+            const haystack = [
+                r.title,
+                r.description,
+                r.content,
+                r.url,
+                ...(r.tags ?? []),
+            ]
+                .filter(Boolean)
+                .join(" ")
+                .toLowerCase();
+
+            return haystack.includes(q);
+        });
+
+        // Prefer title matches, then fall back to other fields
+        matches.sort((a, b) => {
+            const at = a.title.toLowerCase().includes(q) ? 0 : 1;
+            const bt = b.title.toLowerCase().includes(q) ? 0 : 1;
+            return at - bt;
+        });
+
+        return matches.slice(0, 8);
+    }, [resources, searchQuery]);
 
     const handleSaveCategory = (categoryData: Omit<Category, "id">) => {
         if (editingCategory) {
             // Update active tab if we're editing the currently active category
             if (activeTab === editingCategory.name) {
-                setActiveTab(categoryData.name);
+                switchTab(categoryData.name);
             }
 
             // Edit mode
@@ -192,7 +247,7 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
         if (categoryToDelete) {
             setCategories(categories.filter(c => c.id !== categoryToDelete.id));
             if (activeTab === categoryToDelete.name) {
-                setActiveTab("All Resources");
+                switchTab("All Resources");
             }
             setCategoryToDelete(null);
         }
@@ -480,6 +535,64 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
         downloadAnchorNode.remove();
     };
 
+    const handleBulkExport = (format: 'json' | 'md' | 'pdf' = 'json') => {
+        const selected = resources.filter(r => selectedResourceIds.has(r.id));
+        if (selected.length === 0) return;
+
+        let content = "";
+        let contentType = "";
+        let extension = "";
+
+        if (format === 'json') {
+            content = JSON.stringify(selected, null, 2);
+            contentType = "application/json";
+            extension = "json";
+        } else if (format === 'md') {
+            content = selected.map((r) => {
+                const parts = [
+                    `# ${r.title}`,
+                    ``,
+                    `Type: ${r.type}`,
+                    r.url ? `URL: ${r.url}` : "",
+                    r.description ? `\n${r.description}\n` : "",
+                    r.content ? `\n${r.content}\n` : "",
+                    `---`,
+                    ``,
+                ].filter(Boolean);
+                return parts.join("\n");
+            }).join("\n");
+            contentType = "text/markdown";
+            extension = "md";
+        } else if (format === 'pdf') {
+            // Simple text representation for PDF simulation if no library is present
+            content = selected.map((r) => {
+                return [
+                    `RESOURCE: ${r.title}`,
+                    `TYPE: ${r.type}`,
+                    r.url ? `URL: ${r.url}` : "",
+                    ``,
+                    r.description || "",
+                    ``,
+                    r.content || "",
+                    ``,
+                    `----------------------------------------`,
+                    ``,
+                ].join("\n");
+            }).join("\n");
+            contentType = "application/pdf";
+            extension = "pdf";
+        }
+
+        const fileName = `orbdyn_export_${selected.length}_items.${extension}`;
+        const dataStr = `data:${contentType};charset=utf-8,` + encodeURIComponent(content);
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", fileName);
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+    };
+
     const handleShareResource = (resource: Resource) => {
         const textToShare = `${resource.title}\n${resource.content}\n${resource.url || ''}`;
         if (navigator.share) {
@@ -597,7 +710,7 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
     });
 
     const menuItems = [
-        { name: "Main", icon: Home },
+        // { name: "Main", icon: Home }, // disabled for now
         { name: "All Resources", icon: LayoutGrid },
         { name: "Links", icon: LinkIcon },
         { name: "Notes", icon: FileText },
@@ -627,7 +740,7 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                         {menuItems.map((item) => (
                             <button
                                 key={item.name}
-                                onClick={() => setActiveTab(item.name)}
+                                onClick={() => switchTab(item.name)}
                                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 group relative overflow-hidden ${activeTab === item.name
                                     ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10"
                                     : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5"
@@ -713,7 +826,7 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
 
                 <div className="p-4 border-t border-slate-200 dark:border-slate-800 space-y-3">
                     <button
-                        onClick={() => setActiveTab("Profile")}
+                        onClick={() => switchTab("Profile")}
                         className={`w-full flex items-center gap-3 px-3 py-2 mb-2 rounded-xl transition-all group ${activeTab === "Profile"
                             ? "bg-blue-500/10"
                             : "hover:bg-slate-100 dark:hover:bg-white/5"
@@ -728,7 +841,7 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                         </div>
                     </button>
                     <button
-                        onClick={() => setActiveTab("Settings")}
+                        onClick={() => switchTab("Settings")}
                         className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${activeTab === "Settings"
                             ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
                             : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5"
@@ -751,14 +864,51 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
             <main className="flex-1 flex flex-col relative z-10 overflow-hidden">
                 {/* Header */}
                 <header className="h-16 border-b border-slate-200 dark:border-slate-900 flex items-center justify-between px-8 bg-white/70 dark:bg-[#020617]/50 backdrop-blur-xl shrink-0 relative z-20 transition-colors duration-300">
-                    <div className="relative w-96 max-w-full">
+                    <div className="relative w-96 max-w-full" ref={searchRef}>
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                         <Input
                             placeholder="Search resources..."
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onChange={(e) => {
+                                const next = e.target.value;
+                                setSearchQuery(next);
+                                setIsSearchOpen(Boolean(next.trim()));
+                            }}
+                            onFocus={() => setIsSearchOpen(Boolean(searchQuery.trim()))}
                             className="bg-white dark:bg-[#0f172a] border-slate-200 dark:border-[#1e293b] h-10 pl-10 rounded-lg focus:ring-1 focus:ring-blue-500/50 shadow-sm dark:shadow-none transition-all placeholder:text-slate-500 dark:placeholder:text-slate-600 text-sm w-full text-slate-900 dark:text-white"
                         />
+
+                        {isSearchOpen && searchSuggestions.length > 0 && (
+                            <div className="absolute left-0 right-0 mt-2 bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl overflow-hidden z-50">
+                                <ScrollArea className="max-h-72">
+                                    <div className="p-1.5">
+                                        {searchSuggestions.map((r) => (
+                                            <button
+                                                key={r.id}
+                                                onClick={() => {
+                                                    setSelectedResource(r);
+                                                    switchTab("All Resources");
+                                                    setIsSearchOpen(false);
+                                                }}
+                                                className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors flex items-center gap-3"
+                                            >
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+                                                        {r.title}
+                                                    </div>
+                                                    <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                                                        {r.url ? r.url : (r.description || r.content || "")}
+                                                    </div>
+                                                </div>
+                                                <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 shrink-0">
+                                                    {r.type}
+                                                </span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </ScrollArea>
+                            </div>
+                        )}
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -888,24 +1038,6 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                         </DropdownMenu>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="sm" className="h-9 bg-transparent border-slate-200 dark:border-[#1e293b] text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white data-[state=open]:bg-slate-100 dark:data-[state=open]:bg-[#1e293b] data-[state=open]:text-slate-900 dark:data-[state=open]:text-white rounded-lg gap-2 font-medium px-4 text-xs transition-colors">
-                                    <Download className="w-3.5 h-3.5" /> Export
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent className="bg-white dark:bg-[#0f172a] border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-200 shadow-xl p-1.5 min-w-[140px] transition-colors">
-                                <DropdownMenuItem onClick={() => { }} className="hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-slate-100 dark:focus:bg-slate-800 cursor-pointer text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-600 dark:text-slate-300">
-                                    As JSON
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => { }} className="hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-slate-100 dark:focus:bg-slate-800 cursor-pointer text-xs font-medium px-2.5 py-2 rounded-md transition-colors text-slate-600 dark:text-slate-300">
-                                    As Markdown
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => { }} className="hover:bg-blue-600 focus:bg-blue-600 focus:text-white cursor-pointer text-xs font-bold px-2.5 py-2 rounded-md transition-colors text-slate-700 dark:text-slate-300">
-                                    As PDF
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
                                 <Button variant="outline" size="sm" className="h-9 bg-transparent border-slate-200 dark:border-[#1e293b] text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#1e293b] rounded-lg gap-2 font-medium px-4 text-xs transition-colors">
                                     <Upload className="w-3.5 h-3.5" /> Import
                                 </Button>
@@ -941,77 +1073,7 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
 
                 {/* Content Area */}
                 <div className="flex-1 flex flex-col overflow-y-auto no-scrollbar">
-                    {activeTab === "Settings" ? (
-                        <SettingsPage theme={theme} onThemeChange={setTheme} />
-                    ) : activeTab === "Main" ? (
-                        <div className="flex-1 flex flex-col p-8 space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            <div className="space-y-4">
-                                <h1 className="text-4xl font-black tracking-tight text-slate-900 dark:text-white">
-                                    Welcome back, <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">{user.name}</span>!
-                                </h1>
-                                <p className="text-slate-500 dark:text-slate-400 text-lg font-medium max-w-2xl">
-                                    Here's what's happening with your resources today. Your private digital library is growing.
-                                </p>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                {[
-                                    { label: "Total Resources", value: resources.length, icon: LayoutGrid, color: "text-blue-500", bg: "bg-blue-500/10" },
-                                    { label: "Links Saved", value: resources.filter(r => r.type === 'Link').length, icon: LinkIcon, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-                                    { label: "Notes Written", value: resources.filter(r => r.type === 'Note').length, icon: FileText, color: "text-amber-500", bg: "bg-amber-500/10" },
-                                    { label: "Favorites", value: resources.filter(r => r.isFavorite).length, icon: Star, color: "text-rose-500", bg: "bg-rose-500/10" },
-                                ].map((stat, i) => (
-                                    <div key={i} className="p-6 rounded-3xl bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 shadow-sm transition-all hover:shadow-xl group">
-                                        <div className="flex items-center justify-between mb-4">
-                                            <div className={`p-3 rounded-2xl ${stat.bg} ${stat.color}`}>
-                                                <stat.icon className="w-6 h-6" />
-                                            </div>
-                                            <span className="text-3xl font-black text-slate-900 dark:text-white">{stat.value}</span>
-                                        </div>
-                                        <p className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">{stat.label}</p>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="space-y-6">
-                                <div className="flex items-center justify-between">
-                                    <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Recent Activity</h2>
-                                    <Button variant="ghost" className="text-blue-600 font-bold hover:bg-blue-50" onClick={() => setActiveTab("All Resources")}>View All</Button>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {resources.filter(r => !r.isDeleted).slice(0, 3).map(resource => (
-                                        <Card
-                                            key={resource.id}
-                                            className="bg-white dark:bg-[#0f172a] border-slate-200 dark:border-slate-800 transition-all duration-300 shadow-sm hover:shadow-xl hover:shadow-blue-500/10 dark:hover:shadow-none hover:-translate-y-1 cursor-pointer overflow-hidden group rounded-[1.75rem] border-none ring-1 ring-slate-200 dark:ring-slate-800"
-                                            onClick={() => setSelectedResource(resource)}
-                                        >
-                                            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-500/5 to-transparent blur-2xl -mr-12 -mt-12 group-hover:from-blue-500/10 transition-colors" />
-                                            <CardHeader className="p-5 pb-1">
-                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 ${resource.type === 'Link' ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 shadow-lg shadow-blue-500/5' :
-                                                    resource.type === 'Note' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shadow-lg shadow-emerald-500/5' :
-                                                        'bg-purple-500/10 text-purple-600 dark:text-purple-400 shadow-lg shadow-purple-500/5'
-                                                    }`}>
-                                                    {resource.type === 'Link' && <LinkIcon className="w-5 h-5" />}
-                                                    {resource.type === 'Note' && <FileText className="w-5 h-5" />}
-                                                    {resource.type === 'To Do' && <CheckSquare className="w-5 h-5" />}
-                                                </div>
-                                                <CardTitle className="text-lg font-bold text-slate-900 dark:text-white line-clamp-1">{resource.title}</CardTitle>
-                                                <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mt-1.5 font-medium leading-relaxed">{resource.description || 'Securely archived in your vault.'}</p>
-                                            </CardHeader>
-                                            <CardFooter className="px-5 py-3 flex justify-between items-center bg-slate-50/50 dark:bg-[#020617]/40 mt-2 border-t border-slate-100 dark:border-slate-800/50">
-                                                <Badge className="bg-slate-200/50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 border-none px-2.5 py-0.5 font-bold text-[9px] uppercase tracking-widest rounded-md">
-                                                    {resource.tags?.[0] || 'Unsorted'}
-                                                </Badge>
-                                                <span className="text-[9px] font-black text-slate-400 dark:text-slate-600 uppercase tracking-widest">{new Date(resource.createdAt).toLocaleDateString()}</span>
-                                            </CardFooter>
-                                        </Card>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    ) : activeTab === "Profile" ? (
-                        <ProfilePage user={user} onSignOut={onSignOut} />
-                    ) : selectedResource ? (
+                    {selectedResource ? (
                         <div className="flex-1 h-full overflow-hidden">
                             <ResourceDetailView
                                 resource={selectedResource}
@@ -1023,6 +1085,10 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                                 theme={theme}
                             />
                         </div>
+                    ) : activeTab === "Settings" ? (
+                        <SettingsPage theme={theme} onThemeChange={setTheme} />
+                    ) : activeTab === "Profile" ? (
+                        <ProfilePage user={user} onSignOut={onSignOut} onUpdateUser={handleUpdateUser} />
                     ) : (
                         <div className="flex-1 flex flex-col p-8">
                             {sortedResources.length > 0 ? (
@@ -1287,6 +1353,34 @@ export default function Dashboard({ onSignOut }: DashboardProps) {
                         </div>
 
                         <div className="flex items-center gap-2">
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" className="h-10 rounded-xl gap-2 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 font-bold transition-all">
+                                        <Download className="w-4 h-4" /> Export
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="center" className="bg-white dark:bg-[#0f172a] border-slate-200 dark:border-slate-800 w-[200px] p-1.5 shadow-xl">
+                                    <DropdownMenuItem
+                                        onClick={() => handleBulkExport('json')}
+                                        className="gap-3 rounded-lg py-2.5 cursor-pointer font-medium"
+                                    >
+                                        As JSON
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => handleBulkExport('md')}
+                                        className="gap-3 rounded-lg py-2.5 cursor-pointer font-medium"
+                                    >
+                                        As Markdown
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => handleBulkExport('pdf')}
+                                        className="gap-3 rounded-lg py-2.5 cursor-pointer font-medium"
+                                    >
+                                        As PDF
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="ghost" className="h-10 rounded-xl gap-2 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 font-bold transition-all">
